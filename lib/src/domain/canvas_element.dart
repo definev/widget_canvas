@@ -18,4 +18,15 @@ class CanvasElement {
 
   @override
   int get hashCode => id;
+
+  CanvasElement copyWith({
+    int? id,
+    Offset? offset,
+    bool? isSelected,
+  }) =>
+      CanvasElement(
+        id: id ?? this.id,
+        offset: offset ?? this.offset,
+        isSelected: isSelected ?? this.isSelected,
+      );
 }
