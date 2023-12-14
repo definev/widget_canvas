@@ -1,54 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:widget_canvas/widget_canvas.dart';
 
-class MovableCanvasElement extends StatefulWidget {
+class MovableCanvasElement<T> extends StatefulWidget {
   const MovableCanvasElement({
     super.key,
     required this.element,
     required this.elements,
-    required this.dimension,
+    this.dimension = WidgetCanvasChildDelegate.rulerUnit,
     required this.child,
     this.snap = false,
   });
 
-  final CanvasElement element;
-  final ValueNotifier<BinaryList<CanvasElement>> elements;
+  final CanvasElement<T> element;
+  final ValueNotifier<BinaryList<CanvasElement<T>>> elements;
   final bool snap;
   final double dimension;
   final Widget child;
 
   @override
-  State<MovableCanvasElement> createState() => _MovableCanvasElementState();
+  State<MovableCanvasElement<T>> createState() => _MovableCanvasElementState<T>();
 }
 
-class _MovableCanvasElementState extends State<MovableCanvasElement> {
-  late CanvasElement element;
+class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
+  ValueChanged<Offset> get onCanvasElementMove => (coordinate) => widget.elements.value =
+      widget.elements.value.selectElement(widget.element, widget.element..coordinate = coordinate);
 
-  @override
-  void initState() {
-    super.initState();
-    element = widget.element;
-  }
-
-  @override
-  void didUpdateWidget(MovableCanvasElement oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    element = widget.element;
-  }
-  
-  ValueChanged<Offset> get onCanvasElementMove => (offset) {
-        if (offset == element.offset) return;
-        widget.elements.value = widget.elements.value.lockAt(
-          widget.element,
-          (element) => element.copyWith(offset: offset, isSelected: true),
-        );
-      };
-
-  VoidCallback get onCanvasElementMoveEnd => () => widget.elements.value = widget.elements.value.unlockAt(
-        element,
-        (element) => element.copyWith(isSelected: false),
-      );
-
+  VoidCallback get onCanvasElementMoveEnd =>
+      () => widget.elements.value = widget.elements.value.unselectElement(widget.element);
   Offset? lastOffset;
   Offset? startPosition;
 
@@ -56,7 +34,7 @@ class _MovableCanvasElementState extends State<MovableCanvasElement> {
   Widget build(BuildContext context) {
     return Listener(
       onPointerDown: (details) {
-        lastOffset = element.offset;
+        lastOffset = widget.element.coordinate;
         startPosition = details.localPosition;
       },
       onPointerMove: (details) {
@@ -72,10 +50,15 @@ class _MovableCanvasElementState extends State<MovableCanvasElement> {
             (newOffset.dy / widget.dimension).round() * widget.dimension,
           );
         }
+
         onCanvasElementMove(newOffset);
       },
-      onPointerCancel: (_) => onCanvasElementMoveEnd(),
-      onPointerUp: (details) {
+      onPointerCancel: (_) {
+        lastOffset = null;
+        startPosition = null;
+        onCanvasElementMoveEnd();
+      },
+      onPointerUp: (_) {
         lastOffset = null;
         startPosition = null;
         onCanvasElementMoveEnd();

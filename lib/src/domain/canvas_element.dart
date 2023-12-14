@@ -1,32 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:widget_canvas/src/widget_canvas.dart';
 
-class CanvasElement {
-  CanvasElement({
+typedef Coordinate = Offset;
+
+class CanvasElement<T> extends ValueNotifier<Coordinate> implements Comparable<CanvasElement<Object>> {
+  CanvasElement(
+    super._value, {
     required this.id,
-    required this.offset,
-    this.isSelected = false,
+    required this.data,
   });
 
   final int id;
-  final Offset offset;
-  final bool isSelected;
+  final T data;
+  Coordinate get coordinate => value;
+  set coordinate(Coordinate coordinate) => value = coordinate;
 
-  late final ChildVicinity vicinity = ChildVicinity(xIndex: id, yIndex: 3);
+  late final ChildVicinity vicinity =
+      ChildVicinity(xIndex: id, yIndex: WidgetCanvasRenderTwoDimensionalViewport.contentLayer);
 
   @override
-  bool operator ==(Object? other) => other is CanvasElement ? id == other.id : false;
+  bool operator ==(Object? other) => other is CanvasElement ? value == other.value : false;
 
   @override
-  int get hashCode => id;
+  int get hashCode => id ^ value.hashCode;
 
-  CanvasElement copyWith({
-    int? id,
-    Offset? offset,
-    bool? isSelected,
-  }) =>
-      CanvasElement(
-        id: id ?? this.id,
-        offset: offset ?? this.offset,
-        isSelected: isSelected ?? this.isSelected,
-      );
+  @override
+  int compareTo(CanvasElement<Object> other) => id.compareTo(other.id);
 }

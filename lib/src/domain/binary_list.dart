@@ -1,11 +1,10 @@
+import 'package:flutter/foundation.dart';
+
 typedef DistanceFunction<T> = int Function(T object);
 
-enum SortingStrategy {
-  quick,
-  none,
-}
+enum SortingStrategy { quick, none }
 
-class BinaryList<T> {
+class BinaryList<T extends Comparable<Object>> {
   BinaryList({
     required List<T> list,
     Set<T>? selectedSet,
@@ -43,19 +42,26 @@ class BinaryList<T> {
     _list.sort(_compare);
   }
 
-  void add(T element) {
-    _list.add(element);
-    _sort();
+  BinaryList<T> add(T element) {
+    return BinaryList(
+      list: [..._list, element],
+      compare: _compare,
+    );
   }
 
-  void addAll(Iterable<T> elements) {
-    _list.addAll(elements);
-    _sort();
+  BinaryList<T> addAll(Iterable<T> elements) {
+    return BinaryList(
+      list: [...list, ...elements],
+      compare: _compare,
+    );
   }
 
-  void remove(T element) {
-    _list.remove(element);
-    _sort();
+  BinaryList<T> remove(T element) {
+    return BinaryList(
+      list: [..._list]..remove(element),
+      compare: _compare,
+      sortingStrategy: SortingStrategy.none,
+    );
   }
 
   BinaryList<T> slice(int start, int end) {
@@ -124,13 +130,12 @@ class BinaryList<T> {
     return slice(min, max);
   }
 
-  BinaryList<T> lockAt(T element, T Function(T element) onUpdate) {
-    final index = listBinarySearch(_list, element, comparator: _compare);
+  BinaryList<T> selectElement(T oldValue, T newValue) {
+    final index = binarySearch<T>(_list, oldValue);
     if (index == -1) return this;
-    _selectedSet.remove(element);
-    final updatedElement = onUpdate(element);
-    _selectedSet.add(updatedElement);
-    _list[index] = updatedElement;
+    _selectedSet.remove(oldValue);
+    _selectedSet.add(newValue);
+    _list[index] = newValue;
 
     return BinaryList(
       list: _list,
@@ -140,18 +145,16 @@ class BinaryList<T> {
     );
   }
 
-  BinaryList<T> unlockAt(T element, T Function(T element) onUpdate) {
-    final index = listBinarySearch(_list, element, comparator: _compare);
+  BinaryList<T> unselectElement(T value) {
+    final index = binarySearch(_list, value);
     if (index == -1) return this;
-    _selectedSet.remove(element);
-    final updatedElement = onUpdate(element);
-    _list[index] = updatedElement;
+    _selectedSet.remove(value);
 
     return BinaryList(
       list: _list,
       selectedSet: _selectedSet,
       compare: _compare,
-      sortingStrategy: SortingStrategy.quick,
+      sortingStrategy: SortingStrategy.none,
     );
   }
 
@@ -166,30 +169,12 @@ class BinaryList<T> {
   }
 }
 
-extension IListToBinaryListX<T> on List<T> {
+extension ListToBinaryListX<T extends Comparable<Object>> on List<T> {
   BinaryList<T> binaryList(Comparator<T> compare) => BinaryList(list: this, compare: compare);
 }
 
-extension BinaryIListX<T> on BinaryList<T> {
-  BinaryList<T> binaryList(Comparator<T> compare) =>
-      BinaryList(list: list, compare: compare, selectedSet: selectedSet);
-}
+extension BinaryIListX<T extends Comparable<Object>> on BinaryList<T> {
+  ValueNotifier<BinaryList<T>> toValueNotifier() => ValueNotifier(this);
 
-int listBinarySearch<T>(List<T> sortedList, T value, {required Comparator<T> comparator}) {
-  int min = 0;
-  int max = sortedList.length;
-  while (min < max) {
-    final int mid = min + ((max - min) >> 1);
-    final T element = sortedList[mid];
-    final int comp = comparator(element, value);
-    if (comp == 0) {
-      return mid;
-    }
-    if (comp < 0) {
-      min = mid + 1;
-    } else {
-      max = mid;
-    }
-  }
-  return -1;
+  BinaryList<T> binaryList(Comparator<T> compare) => BinaryList(list: list, compare: compare, selectedSet: selectedSet);
 }

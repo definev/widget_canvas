@@ -24,19 +24,15 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  final elements = ValueNotifier<BinaryList<CanvasElement>>(
-    <CanvasElement>[].binaryList(WidgetCanvasChildDelegate.defaultCompare(Axis.horizontal)),
-  );
+  final elements = <CanvasElement>[] //
+      .binaryList(WidgetCanvasChildDelegate.defaultCompare(Axis.horizontal))
+      .toValueNotifier();
 
   @override
   void initState() {
     super.initState();
     elements.value = <CanvasElement>[
-      for (int i = 4; i < 17; i += 1)
-        CanvasElement(
-          id: i,
-          offset: Offset(i % 5 * 100.0, i ~/ 5 * 100.0),
-        ),
+      for (int i = 0; i < 10; i += 1) CanvasElement(Offset(i * 100, i * 100), id: i, data: i),
     ].binaryList(WidgetCanvasChildDelegate.defaultCompare(Axis.horizontal));
     elements.addListener(() => setState(() {}));
   }
@@ -53,26 +49,33 @@ class _HomeViewState extends State<HomeView> {
       appBar: AppBar(
         title: const Text('App'),
       ),
-      body: WidgetCanvas(
-        diagonalDragBehavior: DiagonalDragBehavior.free,
-        delegate: WidgetCanvasChildDelegate(
-          showGrid: true,
-          dimension: 100,
-          elements: elements.value,
-          builder: (context, element) => MovableCanvasElement(
-            snap: ,
-            dimension: 100,
-            element: element,
-            elements: elements,
-            child: Card(
-              margin: EdgeInsets.zero,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text('${element.id} ${element.offset}'),
+      body: Column(
+        children: [
+          Expanded(
+            child: WidgetCanvas(
+              clipBehavior: Clip.none,
+              diagonalDragBehavior: DiagonalDragBehavior.weightedEvent,
+              delegate: WidgetCanvasChildDelegate(
+                showGrid: true,
+                elements: elements.value,
+                builder: (context, element) => MovableCanvasElement(
+                  snap: true,
+                  element: element,
+                  elements: elements,
+                  child: const Text(''),
+                ),
               ),
             ),
           ),
-        ),
+          FilledButton(
+            onPressed: () {
+              for (final element in elements.value.list) {
+                print('${element.id} ${element.coordinate}');
+              }
+            },
+            child: const Text('log elements'),
+          ),
+        ],
       ),
     );
   }
