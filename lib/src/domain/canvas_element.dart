@@ -3,7 +3,7 @@ import 'package:widget_canvas/src/widget_canvas.dart';
 
 typedef Coordinate = Offset;
 
-class CanvasElement<T> extends ValueNotifier<Coordinate> implements Comparable<CanvasElement<Object>> {
+class CanvasElement<T> extends ValueNotifier<Coordinate> implements Comparable<CanvasElement<Object?>> {
   CanvasElement(
     super._value, {
     required this.id,
@@ -25,5 +25,5 @@ class CanvasElement<T> extends ValueNotifier<Coordinate> implements Comparable<C
   int get hashCode => id ^ value.hashCode;
 
   @override
-  int compareTo(CanvasElement<Object> other) => id.compareTo(other.id);
+  int compareTo(CanvasElement<Object?> other) => id.compareTo(other.id);
 }

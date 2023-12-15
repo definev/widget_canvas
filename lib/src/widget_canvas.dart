@@ -242,7 +242,7 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
 
   static const double rulerUnit = 100;
 
-  static Comparator<CanvasElement> defaultCompare(Axis axis) => switch (axis) {
+  static Comparator<CanvasElement<T>> defaultCompare<T>(Axis axis) => switch (axis) {
         Axis.horizontal => (a, b) => a.coordinate.dx.compareTo(b.coordinate.dx),
         Axis.vertical => (a, b) => a.coordinate.dy.compareTo(b.coordinate.dy),
       };
