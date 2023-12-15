@@ -1,4 +1,3 @@
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -55,15 +54,15 @@ class WidgetCanvas<T> extends TwoDimensionalScrollView {
     ViewportOffset horizontalOffset,
   ) {
     return WidgetCanvasTwoDimensionalViewport<T>(
-        delegate: delegate,
-        horizontalAxisDirection: horizontalDetails.direction,
-        horizontalOffset: horizontalOffset,
-        verticalAxisDirection: verticalDetails.direction,
-        verticalOffset: verticalOffset,
-        mainAxis: mainAxis,
-        cacheExtent: cacheExtent,
-        clipBehavior: clipBehavior,
-      );
+      delegate: delegate,
+      horizontalAxisDirection: horizontalDetails.direction,
+      horizontalOffset: horizontalOffset,
+      verticalAxisDirection: verticalDetails.direction,
+      verticalOffset: verticalOffset,
+      mainAxis: mainAxis,
+      cacheExtent: cacheExtent,
+      clipBehavior: clipBehavior,
+    );
   }
 }
 
@@ -133,11 +132,10 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
 
   Map<ChildVicinity, CanvasElement<T>?>? _sortedElements;
 
-  List<CanvasElement<T>> getVisibleElement(BinaryList<CanvasElement<T>> elements, Offset topLeft, Offset bottomRight) {
+  List<CanvasElement<T>> getVisibleElement(WidgetCanvasElements<T> elements, Offset topLeft, Offset bottomRight) {
     _sortedElements = null;
     _sortedElements = {};
-    var sorted = elements //
-        .whereIndexed(
+    var sorted = elements.list.whereIndexed(
       (element) => BinaryList //
               .isInRange(topLeft.dx, bottomRight.dx, (a, b) => a.compareTo(b)) //
           (element.coordinate.dx),
@@ -154,7 +152,7 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
 
     final list = sorted.list;
 
-    for (final selected in sorted.selectedSet) {
+    for (final selected in elements.selected) {
       final index = list.indexOf(selected);
       if (index == -1) {
         list.add(selected);
@@ -247,7 +245,7 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
         Axis.vertical => (a, b) => a.coordinate.dy.compareTo(b.coordinate.dy),
       };
 
-  final BinaryList<CanvasElement<T>> elements;
+  final WidgetCanvasElements<T> elements;
   final Widget Function(BuildContext context, CanvasElement<T> element) builder;
   final bool showGrid;
   final double unit;

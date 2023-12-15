@@ -1,4 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:widget_canvas/src/domain/canvas_element.dart';
+import 'package:widget_canvas/src/widget_canvas.dart';
 
 typedef DistanceFunction<T> = int Function(T object);
 
@@ -11,7 +14,6 @@ class BinaryList<T extends Comparable<Object>> {
     required int Function(T a, T b) compare,
     SortingStrategy sortingStrategy = SortingStrategy.quick,
   })  : _list = list,
-        _selectedSet = selectedSet ?? {},
         _compare = compare {
     switch (sortingStrategy) {
       case SortingStrategy.quick:
@@ -33,9 +35,6 @@ class BinaryList<T extends Comparable<Object>> {
 
   final List<T> _list;
   List<T> get list => _list;
-  final Set<T> _selectedSet;
-  Set<T> get selectedSet => _selectedSet;
-
   final Comparator<T> _compare;
 
   void _sort() {
@@ -44,7 +43,7 @@ class BinaryList<T extends Comparable<Object>> {
 
   BinaryList<T> add(T element) {
     return BinaryList(
-      list: [..._list, element],
+      list: [...list, element],
       compare: _compare,
     );
   }
@@ -68,7 +67,6 @@ class BinaryList<T extends Comparable<Object>> {
     return BinaryList(
       list: _list.sublist(start, end),
       compare: _compare,
-      selectedSet: _selectedSet,
       sortingStrategy: SortingStrategy.none,
     );
   }
@@ -130,34 +128,6 @@ class BinaryList<T extends Comparable<Object>> {
     return slice(min, max);
   }
 
-  BinaryList<T> selectElement(T oldValue, T newValue) {
-    final index = binarySearch<T>(_list, oldValue);
-    if (index == -1) return this;
-    _selectedSet.remove(oldValue);
-    _selectedSet.add(newValue);
-    _list[index] = newValue;
-
-    return BinaryList(
-      list: _list,
-      compare: _compare,
-      selectedSet: _selectedSet,
-      sortingStrategy: SortingStrategy.quick,
-    );
-  }
-
-  BinaryList<T> unselectElement(T value) {
-    final index = binarySearch(_list, value);
-    if (index == -1) return this;
-    _selectedSet.remove(value);
-
-    return BinaryList(
-      list: _list,
-      selectedSet: _selectedSet,
-      compare: _compare,
-      sortingStrategy: SortingStrategy.none,
-    );
-  }
-
   @override
   String toString() {
     final buf = StringBuffer();
@@ -173,8 +143,75 @@ extension ListToBinaryListX<T extends Comparable<Object>> on List<T> {
   BinaryList<T> binaryList(Comparator<T> compare) => BinaryList(list: this, compare: compare);
 }
 
-extension BinaryIListX<T extends Comparable<Object>> on BinaryList<T> {
+extension BinaryListX<T extends Comparable<Object>> on BinaryList<T> {
   ValueNotifier<BinaryList<T>> toValueNotifier() => ValueNotifier(this);
 
-  BinaryList<T> binaryList(Comparator<T> compare) => BinaryList(list: list, compare: compare, selectedSet: selectedSet);
+  BinaryList<T> binaryList(Comparator<T> compare) => BinaryList(list: list, compare: compare);
+}
+
+class WidgetCanvasElements<T> {
+  WidgetCanvasElements._({
+    required BinaryList<CanvasElement<T>> binaryList,
+    required Set<CanvasElement<T>> selected,
+  })  : _binaryList = binaryList,
+        _selected = selected;
+
+  factory WidgetCanvasElements.fromList(List<CanvasElement<T>> elements) {
+    return WidgetCanvasElements._(
+      binaryList: elements.binaryList(WidgetCanvasChildDelegate.defaultCompare(Axis.horizontal)),
+      selected: {},
+    );
+  }
+
+  final BinaryList<CanvasElement<T>> _binaryList;
+  BinaryList<CanvasElement<T>> get list => _binaryList;
+
+  int _maxId = 0;
+  int get _latestId => _maxId + 1;
+
+  WidgetCanvasElements upsert(Coordinate at, T data, {int? id}) {
+    id ??= _latestId;
+    if (id > _maxId) _maxId = id;
+    _binaryList.add(CanvasElement(at, id: id, data: data));
+    return WidgetCanvasElements._(
+      binaryList: _binaryList,
+      selected: _selected,
+    );
+  }
+
+  final Set<CanvasElement<T>> _selected;
+  Set<CanvasElement<T>> get selected => _selected;
+
+  WidgetCanvasElements<T> selectElement(CanvasElement<T> value) {
+    final index = binarySearch(_binaryList._list, value);
+    if (index == -1) return this;
+    _selected.add(value);
+    _binaryList._list[index] = value;
+
+    return WidgetCanvasElements<T>._(
+      binaryList: BinaryList<CanvasElement<T>>(
+        list: _binaryList._list,
+        compare: _binaryList._compare,
+        selectedSet: _selected,
+        sortingStrategy: SortingStrategy.quick,
+      ),
+      selected: _selected,
+    );
+  }
+
+  WidgetCanvasElements<T> unselectElement(CanvasElement<T> value) {
+    final index = binarySearch(_binaryList._list, value);
+    if (index == -1) return this;
+    _selected.remove(value);
+
+    return WidgetCanvasElements<T>._(
+      binaryList: BinaryList<CanvasElement<T>>(
+        list: _binaryList._list,
+        selectedSet: _selected,
+        compare: _binaryList._compare,
+        sortingStrategy: SortingStrategy.none,
+      ),
+      selected: _selected,
+    );
+  }
 }

@@ -22,7 +22,7 @@ class CanvasElement<T> extends ValueNotifier<Coordinate> implements Comparable<C
   bool operator ==(Object? other) => other is CanvasElement ? value == other.value : false;
 
   @override
-  int get hashCode => id ^ value.hashCode;
+  int get hashCode => id;
 
   @override
   int compareTo(CanvasElement<Object?> other) => id.compareTo(other.id);

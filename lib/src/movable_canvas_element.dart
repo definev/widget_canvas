@@ -12,7 +12,7 @@ class MovableCanvasElement<T> extends StatefulWidget {
   });
 
   final CanvasElement<T> element;
-  final ValueNotifier<BinaryList<CanvasElement<T>>> elements;
+  final ValueNotifier<WidgetCanvasElements<T>> elements;
   final bool snap;
   final double dimension;
   final Widget child;
@@ -23,7 +23,7 @@ class MovableCanvasElement<T> extends StatefulWidget {
 
 class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
   ValueChanged<Offset> get onCanvasElementMove => (coordinate) => widget.elements.value =
-      widget.elements.value.selectElement(widget.element, widget.element..coordinate = coordinate);
+      widget.elements.value.selectElement(widget.element..coordinate = coordinate);
 
   VoidCallback get onCanvasElementMoveEnd =>
       () => widget.elements.value = widget.elements.value.unselectElement(widget.element);
