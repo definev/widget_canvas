@@ -63,7 +63,7 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
         startPosition = null;
         onCanvasElementMoveEnd();
       },
-      behavior: HitTestBehavior.translucent,
+      behavior: HitTestBehavior.opaque,
       child: widget.child,
     );
   }

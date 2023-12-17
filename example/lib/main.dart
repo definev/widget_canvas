@@ -54,7 +54,7 @@ class _HomeViewState extends State<HomeView> {
       body: Column(
         children: [
           Expanded(
-            child: WidgetCanvas(
+            child: ZoomableWidgetCanvas(
               clipBehavior: Clip.none,
               diagonalDragBehavior: DiagonalDragBehavior.weightedEvent,
               delegate: WidgetCanvasChildDelegate<int>(
