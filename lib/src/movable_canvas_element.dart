@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:widget_canvas/widget_canvas.dart';
 
 class MovableCanvasElement<T> extends StatefulWidget {
-  const MovableCanvasElement({
+  const MovableCanvasElement(
+    this.data, {
     super.key,
-    required this.element,
     required this.elements,
     required this.onElementsChanged,
     this.dimension = WidgetCanvasChildDelegate.rulerUnit,
@@ -12,7 +12,7 @@ class MovableCanvasElement<T> extends StatefulWidget {
     this.snap = false,
   });
 
-  final CanvasElement<T> element;
+  final CanvasElement<T> data;
   final WidgetCanvasElements<T> elements;
   final ValueChanged<WidgetCanvasElements<T>> onElementsChanged;
   final bool snap;
@@ -25,10 +25,10 @@ class MovableCanvasElement<T> extends StatefulWidget {
 
 class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
   ValueChanged<Offset> get onCanvasElementMove =>
-      (coordinate) => widget.onElementsChanged(widget.elements.selectElement(widget.element..coordinate = coordinate));
+      (coordinate) => widget.onElementsChanged(widget.elements.selectElement(widget.data..coordinate = coordinate));
 
   VoidCallback get onCanvasElementMoveEnd =>
-      () => widget.onElementsChanged(widget.elements.unselectElement(widget.element));
+      () => widget.onElementsChanged(widget.elements.unselectElement(widget.data));
   Offset? lastOffset;
   Offset? startPosition;
 
@@ -36,7 +36,7 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
   Widget build(BuildContext context) {
     return Listener(
       onPointerDown: (details) {
-        lastOffset = widget.element.coordinate;
+        lastOffset = widget.data.coordinate;
         startPosition = details.localPosition;
       },
       onPointerMove: (details) {
