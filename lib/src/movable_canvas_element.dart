@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:widget_canvas/widget_canvas.dart';
 
@@ -25,8 +26,13 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
   ValueChanged<Offset> get onCanvasElementMove =>
       (coordinate) => widget.onElementsChanged(widget.elements.selectElement(widget.data..coordinate = coordinate));
 
-  VoidCallback get onCanvasElementMoveEnd =>
-      () => widget.onElementsChanged(widget.elements.unselectElement(widget.data));
+  VoidCallback get onCanvasElementMoveEnd => () {
+        lastOffset = null;
+        startPosition = null;
+        widget.data.isSelected = false;
+        widget.onElementsChanged(widget.elements.unselectElement(widget.data));
+      };
+
   Offset? lastOffset;
   Offset? startPosition;
 
@@ -34,12 +40,22 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
   Widget build(BuildContext context) {
     final WidgetCanvasSharedData(:rulerUnit) = WidgetCanvasSharedData.of(context);
 
-    return Listener(
-      onPointerDown: (details) {
+    return GestureDetector(
+      dragStartBehavior: DragStartBehavior.down,
+      trackpadScrollCausesScale: true,
+      supportedDevices: const {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.invertedStylus,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.unknown,
+      },
+      onVerticalDragStart: (details) {
         lastOffset = widget.data.coordinate;
         startPosition = details.localPosition;
+        widget.data.isSelected = true;
       },
-      onPointerMove: (details) {
+      onVerticalDragUpdate: (details) {
         if (lastOffset == null) return;
         if (startPosition == null) return;
 
@@ -55,16 +71,34 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
 
         onCanvasElementMove(newOffset);
       },
-      onPointerCancel: (_) {
-        lastOffset = null;
-        startPosition = null;
-        onCanvasElementMoveEnd();
+      onVerticalDragCancel: () => onCanvasElementMoveEnd(),
+      onVerticalDragEnd: (_) => onCanvasElementMoveEnd(),
+
+      //
+
+      onHorizontalDragStart: (details) {
+        lastOffset = widget.data.coordinate;
+        startPosition = details.localPosition;
+        widget.data.isSelected = true;
       },
-      onPointerUp: (_) {
-        lastOffset = null;
-        startPosition = null;
-        onCanvasElementMoveEnd();
+      onHorizontalDragUpdate: (details) {
+        if (lastOffset == null) return;
+        if (startPosition == null) return;
+
+        final endPosition = details.localPosition;
+        var delta = endPosition - startPosition!;
+        var newOffset = lastOffset! + delta;
+        if (widget.snap) {
+          newOffset = Offset(
+            (newOffset.dx / rulerUnit).round() * rulerUnit,
+            (newOffset.dy / rulerUnit).round() * rulerUnit,
+          );
+        }
+
+        onCanvasElementMove(newOffset);
       },
+      onHorizontalDragCancel: () => onCanvasElementMoveEnd(),
+      onHorizontalDragEnd: (_) => onCanvasElementMoveEnd(),
       behavior: HitTestBehavior.translucent,
       child: widget.child,
     );
