@@ -5,15 +5,15 @@ import 'package:flutter/rendering.dart';
 import 'domain/binary_list.dart';
 import 'domain/canvas_element.dart';
 
-class WidgetCanvasSharedData<T> extends InheritedWidget {
+class WidgetCanvasSharedData extends InheritedWidget {
   const WidgetCanvasSharedData({
     super.key,
     this.rulerUnit = WidgetCanvasChildDelegate.rulerUnit,
     required super.child,
   });
 
-  static WidgetCanvasSharedData<T> of<T>(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<WidgetCanvasSharedData<T>>()!;
+  static WidgetCanvasSharedData of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<WidgetCanvasSharedData>()!;
   }
 
   final double rulerUnit;

@@ -7,7 +7,6 @@ class MovableCanvasElement<T> extends StatefulWidget {
     super.key,
     required this.elements,
     required this.onElementsChanged,
-    this.dimension = WidgetCanvasChildDelegate.rulerUnit,
     required this.child,
     this.snap = false,
   });
@@ -16,7 +15,6 @@ class MovableCanvasElement<T> extends StatefulWidget {
   final WidgetCanvasElements<T> elements;
   final ValueChanged<WidgetCanvasElements<T>> onElementsChanged;
   final bool snap;
-  final double dimension;
   final Widget child;
 
   @override
@@ -34,6 +32,8 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
 
   @override
   Widget build(BuildContext context) {
+    final WidgetCanvasSharedData(:rulerUnit) = WidgetCanvasSharedData.of(context);
+
     return Listener(
       onPointerDown: (details) {
         lastOffset = widget.data.coordinate;
@@ -48,8 +48,8 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
         var newOffset = lastOffset! + delta;
         if (widget.snap) {
           newOffset = Offset(
-            (newOffset.dx / widget.dimension).round() * widget.dimension,
-            (newOffset.dy / widget.dimension).round() * widget.dimension,
+            (newOffset.dx / rulerUnit).round() * rulerUnit,
+            (newOffset.dy / rulerUnit).round() * rulerUnit,
           );
         }
 
