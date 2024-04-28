@@ -65,7 +65,8 @@ class _HomeViewState extends State<HomeView> {
                   builder: (context, __) => MovableCanvasElement<int>(
                     snap: snap.value,
                     element: element,
-                    elements: elements,
+                    elements: elements.value,
+                    onElementsChanged: (value) => elements.value = value,
                     child: ElementCard(element),
                   ),
                 ),

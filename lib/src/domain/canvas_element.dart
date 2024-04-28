@@ -19,7 +19,7 @@ class CanvasElement<T> extends ValueNotifier<Coordinate> implements Comparable<C
       ChildVicinity(xIndex: id, yIndex: WidgetCanvasRenderTwoDimensionalViewport.contentLayer);
 
   @override
-  bool operator ==(Object? other) => other is CanvasElement ? value == other.value : false;
+  bool operator ==(Object other) => other is CanvasElement ? value == other.value : false;
 
   @override
   int get hashCode => id;

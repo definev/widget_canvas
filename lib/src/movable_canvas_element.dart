@@ -6,13 +6,15 @@ class MovableCanvasElement<T> extends StatefulWidget {
     super.key,
     required this.element,
     required this.elements,
+    required this.onElementsChanged,
     this.dimension = WidgetCanvasChildDelegate.rulerUnit,
     required this.child,
     this.snap = false,
   });
 
   final CanvasElement<T> element;
-  final ValueNotifier<WidgetCanvasElements<T>> elements;
+  final WidgetCanvasElements<T> elements;
+  final ValueChanged<WidgetCanvasElements<T>> onElementsChanged;
   final bool snap;
   final double dimension;
   final Widget child;
@@ -22,11 +24,11 @@ class MovableCanvasElement<T> extends StatefulWidget {
 }
 
 class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
-  ValueChanged<Offset> get onCanvasElementMove => (coordinate) => widget.elements.value =
-      widget.elements.value.selectElement(widget.element..coordinate = coordinate);
+  ValueChanged<Offset> get onCanvasElementMove =>
+      (coordinate) => widget.onElementsChanged(widget.elements.selectElement(widget.element..coordinate = coordinate));
 
   VoidCallback get onCanvasElementMoveEnd =>
-      () => widget.elements.value = widget.elements.value.unselectElement(widget.element);
+      () => widget.onElementsChanged(widget.elements.unselectElement(widget.element));
   Offset? lastOffset;
   Offset? startPosition;
 
