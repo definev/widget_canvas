@@ -154,12 +154,14 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
   List<CanvasElement<T>> getVisibleElement(WidgetCanvasElements<T> elements, Offset topLeft, Offset bottomRight) {
     _sortedElements = null;
     _sortedElements = {};
+
     var sorted = elements.list.whereIndexed(
       (element) => BinaryList //
               .isInRange(topLeft.dx, bottomRight.dx, (a, b) => a.compareTo(b)) //
           (element.coordinate.dx),
     );
     if (sorted == null) return <CanvasElement<T>>[];
+
     sorted = sorted //
         .binaryList(WidgetCanvasChildDelegate.defaultCompare(Axis.vertical))
         .whereIndexed(
@@ -285,7 +287,7 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
     if (_sortedElements[vicinity] case final element?) {
       return WidgetCanvasSharedData(
         rulerUnit: unit,
-        child: builder(context, element),
+        child: Builder(builder: (context) => builder(context, element)),
       );
     }
 
@@ -293,5 +295,5 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
   }
 
   @override
-  bool shouldRebuild(covariant WidgetCanvasChildDelegate<T> oldDelegate) => false;
+  bool shouldRebuild(covariant WidgetCanvasChildDelegate<T> oldDelegate) => elements != oldDelegate.elements;
 }
