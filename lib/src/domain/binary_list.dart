@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:widget_canvas/src/domain/canvas_element.dart';
-import 'package:widget_canvas/src/widget_canvas.dart';
+import 'package:widget_canvas/widget_canvas.dart';
 
 typedef DistanceFunction<T> = int Function(T object);
 
@@ -36,6 +35,7 @@ class BinaryList<T extends Comparable<Object>> {
   final List<T> _list;
   List<T> get list => _list;
   final Comparator<T> _compare;
+  Comparator<T> get compare => _compare;
 
   void _sort() {
     _list.sort(_compare);
@@ -166,15 +166,63 @@ class WidgetCanvasElements<T> {
   final BinaryList<CanvasElement<T>> _binaryList;
   BinaryList<CanvasElement<T>> get list => _binaryList;
 
-  int _maxId = 0;
-  int get _latestId => _maxId + 1;
-
-  WidgetCanvasElements upsert(Coordinate at, T data, {int? id}) {
-    id ??= _latestId;
-    if (id > _maxId) _maxId = id;
-    _binaryList.add(CanvasElement(at, id: id, data: data));
+  WidgetCanvasElements<T> copyWith({
+    BinaryList<CanvasElement<T>>? binaryList,
+    Set<CanvasElement<T>>? selected,
+  }) {
     return WidgetCanvasElements._(
-      binaryList: _binaryList,
+      binaryList: binaryList ?? _binaryList,
+      selected: selected ?? _selected,
+    );
+  }
+
+  int get _nextId {
+    var nextId = _binaryList.list.length;
+    while (_binaryList.whereIndexed((element) => element.id.compareTo(nextId)) != null) {
+      nextId++;
+    }
+    return nextId;
+  }
+
+  (CanvasElement<T> element, WidgetCanvasElements<T> elements) upsert(
+    Coordinate at,
+    T data, {
+    int? id,
+    int? layer,
+  }) {
+    final element = CanvasElement(
+      at,
+      id: id ?? _nextId,
+      data: data,
+      layer: layer,
+    );
+    return (
+      element,
+      WidgetCanvasElements<T>._(
+        binaryList: BinaryList<CanvasElement<T>>(
+          list: [..._binaryList._list, element],
+          compare: _binaryList._compare,
+          selectedSet: _selected,
+          sortingStrategy: SortingStrategy.quick,
+        ),
+        selected: _selected,
+      ),
+    );
+  }
+
+  WidgetCanvasElements<T> remove(int id) {
+    final elements = _binaryList.whereIndexed((element) => element.id.compareTo(id));
+    if (elements == null || elements.list.isEmpty) return this;
+
+    return WidgetCanvasElements<T>._(
+      binaryList: _binaryList.remove(elements.list.first),
+      selected: _selected,
+    );
+  }
+
+  WidgetCanvasElements<T> removeElement(CanvasElement<T> element) {
+    return WidgetCanvasElements<T>._(
+      binaryList: _binaryList.remove(element),
       selected: _selected,
     );
   }
