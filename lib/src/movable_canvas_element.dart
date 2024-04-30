@@ -2,8 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:widget_canvas/widget_canvas.dart';
 
-class MovableCanvasElement<T> extends StatefulWidget {
-  const MovableCanvasElement(
+class MovableCanvasElementWidget<T> extends StatefulWidget {
+  const MovableCanvasElementWidget(
     this.data, {
     super.key,
     required this.elements,
@@ -19,18 +19,17 @@ class MovableCanvasElement<T> extends StatefulWidget {
   final Widget child;
 
   @override
-  State<MovableCanvasElement<T>> createState() => _MovableCanvasElementState<T>();
+  State<MovableCanvasElementWidget<T>> createState() => _MovableCanvasElementWidgetState<T>();
 }
 
-class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
+class _MovableCanvasElementWidgetState<T> extends State<MovableCanvasElementWidget<T>> {
   ValueChanged<Offset> get onCanvasElementMove =>
-      (coordinate) => widget.onElementsChanged(widget.elements.selectElement(widget.data..coordinate = coordinate));
+      (coordinate) => widget.onElementsChanged(widget.elements.markElementIsPerminantVisible(widget.data..coordinate = coordinate));
 
   VoidCallback get onCanvasElementMoveEnd => () {
         lastOffset = null;
         startPosition = null;
-        widget.data.isSelected = false;
-        widget.onElementsChanged(widget.elements.unselectElement(widget.data));
+        widget.onElementsChanged(widget.elements.unmarkElementIsPerminantVisible(widget.data));
       };
 
   Offset? lastOffset;
@@ -53,7 +52,6 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
       onVerticalDragStart: (details) {
         lastOffset = widget.data.coordinate;
         startPosition = details.localPosition;
-        widget.data.isSelected = true;
       },
       onVerticalDragUpdate: (details) {
         if (lastOffset == null) return;
@@ -79,7 +77,7 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
       onHorizontalDragStart: (details) {
         lastOffset = widget.data.coordinate;
         startPosition = details.localPosition;
-        widget.data.isSelected = true;
+        widget.data.isPerminantVisible = true;
       },
       onHorizontalDragUpdate: (details) {
         if (lastOffset == null) return;
