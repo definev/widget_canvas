@@ -33,7 +33,13 @@ class _HomeViewState extends State<HomeView> {
     super.initState();
     elements.value = WidgetCanvasElements.fromList(
       [
-        for (int i = 0; i < 10; i += 1) CanvasElement(Offset(i * 100, i * 100), id: i, data: i),
+        for (int i = 0; i < 10; i += 1)
+          CanvasElement(
+            Offset(i * 100, i * 100),
+            size: ValueNotifier(const Size(100, 100)),
+            id: i,
+            data: i,
+          ),
       ],
     );
     elements.addListener(() => setState(() {}));
@@ -62,7 +68,7 @@ class _HomeViewState extends State<HomeView> {
                 elements: elements.value,
                 builder: (context, element) => ListenableBuilder(
                   listenable: snap,
-                  builder: (context, __) => MovableCanvasElement<int>(
+                  builder: (context, __) => MovableCanvasElementWidget<int>(
                     element,
                     snap: snap.value,
                     elements: elements.value,
