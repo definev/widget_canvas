@@ -151,29 +151,48 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
 
   Map<ChildVicinity, CanvasElement<T>?>? _sortedElements;
 
-  List<CanvasElement<T>> getVisibleElement(WidgetCanvasElements<T> elements, Offset topLeft, Offset bottomRight) {
+  List<CanvasElement<T>> getVisibleElement(
+    WidgetCanvasElements<T> elements, {
+    required Offset topLeftScreen,
+    required Offset bottomRightScreen,
+  }) {
     _sortedElements = null;
     _sortedElements = {};
 
+    (Offset topLeft, Offset bottomRight) getCorner(CanvasElement<T> element) {
+      final topLeft = element.coordinate;
+      final size = element.size.value;
+      final bottomRight = topLeft + size.bottomRight(Offset.zero);
+      return (topLeft, bottomRight);
+    }
+
     var sorted = elements.list.whereIndexed(
-      (element) => BinaryList //
-              .isInRange(topLeft.dx, bottomRight.dx, (a, b) => a.compareTo(b)) //
-          (element.coordinate.dx),
+      (element) {
+        final (topLeft, bottomRight) = getCorner(element);
+        return switch (true) {
+          _ when topLeft.dx < topLeftScreen.dx && bottomRight.dx < topLeftScreen.dx => -1,
+          _ when topLeft.dx > bottomRightScreen.dx && bottomRight.dx > bottomRightScreen.dx => 1,
+          _ => 0,
+        };
+      },
     );
-    if (sorted == null) return <CanvasElement<T>>[];
 
     sorted = sorted //
-        .binaryList(WidgetCanvasChildDelegate.defaultCompare(Axis.vertical))
+        ?.binaryList(WidgetCanvasChildDelegate.defaultCompare(Axis.vertical))
         .whereIndexed(
-          (element) => BinaryList //
-                  .isInRange(topLeft.dy, bottomRight.dy, (a, b) => a.compareTo(b)) //
-              (element.coordinate.dy),
-        );
-    if (sorted == null) return <CanvasElement<T>>[];
+      (element) {
+        final (topLeft, bottomRight) = getCorner(element);
+        return switch (true) {
+          _ when topLeft.dy < topLeftScreen.dy && bottomRight.dy < topLeftScreen.dy => -1,
+          _ when topLeft.dy > bottomRightScreen.dy && bottomRight.dy > bottomRightScreen.dy => 1,
+          _ => 0,
+        };
+      },
+    );
 
-    final list = sorted.list;
+    final list = sorted?.list ?? [];
 
-    for (final selected in elements.selected) {
+    for (final selected in elements.perminantVisibleSet) {
       final index = list.indexOf(selected);
       if (index == -1) {
         list.add(selected);
@@ -202,29 +221,30 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
     if (_visibleElements case final elements?) {
       for (final element in elements) {
         element.removeListener(markNeedsLayout);
+        element.size.removeListener(markNeedsLayout);
       }
     }
 
     final horizontalPixels = horizontalOffset.pixels;
     final verticalPixels = verticalOffset.pixels;
-    final viewportHeight = viewportDimension.height + cacheExtent;
-    final viewportWidth = viewportDimension.width + cacheExtent;
+    final viewportHeight = viewportDimension.height;
+    final viewportWidth = viewportDimension.width;
 
-    final topLeft = Offset(horizontalPixels, verticalPixels);
-    final bottomRight = Offset(horizontalPixels, verticalPixels) + Offset(viewportWidth, viewportHeight);
+    var topLeft = Offset(horizontalPixels, verticalPixels);
+    var bottomRight = Offset(horizontalPixels, verticalPixels) + Offset(viewportWidth, viewportHeight);
 
     final canvasDelegate = delegate as WidgetCanvasChildDelegate<T>;
     if (canvasDelegate.showGrid) {
       final dimension = canvasDelegate.unit;
       final baseColumn = (horizontalPixels / dimension).floor();
-      for (var column = 0; column < viewportWidth ~/ dimension; column += 1) {
+      for (var column = 0; column <= (viewportWidth + cacheExtent) ~/ dimension; column += 1) {
         if (buildOrObtainChildFor(ChildVicinity(xIndex: column, yIndex: rulerVerticalLayer)) case final child?) {
           child.layout(constraints.loosen());
           parentDataOf(child).layoutOffset = Offset((baseColumn + column) * dimension, 0) - Offset(horizontalPixels, 0);
         }
       }
       final baseRow = (verticalPixels / dimension).floor();
-      for (var row = 0; row < viewportHeight ~/ dimension; row += 1) {
+      for (var row = 0; row <= (viewportHeight + cacheExtent) ~/ dimension; row += 1) {
         if (buildOrObtainChildFor(ChildVicinity(xIndex: row, yIndex: rulerHorizontalLayer)) case final child?) {
           child.layout(constraints.loosen());
           parentDataOf(child).layoutOffset = Offset(0, (baseRow + row) * dimension) - Offset(0, verticalPixels);
@@ -234,14 +254,16 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
 
     _visibleElements = getVisibleElement(
       canvasDelegate.elements,
-      topLeft - Offset(cacheExtent, cacheExtent),
-      bottomRight,
+      topLeftScreen: topLeft - Offset(cacheExtent, cacheExtent),
+      bottomRightScreen: bottomRight + Offset(cacheExtent, cacheExtent),
     );
 
     for (final element in _visibleElements!) {
       if (buildOrObtainChildFor(element.vicinity) case final child?) {
         element.addListener(markNeedsLayout);
-        child.layout(constraints.loosen());
+        element.size.addListener(markNeedsLayout);
+
+        child.layout(BoxConstraints.tight(element.size.value));
         parentDataOf(child).layoutOffset = element.coordinate - topLeft;
       }
     }

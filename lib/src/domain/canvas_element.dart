@@ -8,21 +8,23 @@ class CanvasElement<T> extends ValueNotifier<Coordinate> implements Comparable<C
     super._value, {
     required this.id,
     required this.data,
+    required this.size,
     this.layer,
   });
 
   final int id;
   final T data;
   final int? layer;
+  final ValueNotifier<Size> size;
 
   Coordinate get coordinate => value;
   set coordinate(Coordinate coordinate) => value = coordinate;
 
-  bool _isSelected = false;
-  bool get isSelected => _isSelected;
-  set isSelected(bool value) {
-    if (_isSelected == value) return;
-    _isSelected = value;
+  bool _isPerminantVisible = false;
+  bool get isPerminantVisible => _isPerminantVisible;
+  set isPerminantVisible(bool value) {
+    if (_isPerminantVisible == value) return;
+    _isPerminantVisible = value;
     notifyListeners();
   }
 
@@ -40,11 +42,4 @@ class CanvasElement<T> extends ValueNotifier<Coordinate> implements Comparable<C
 
   @override
   int compareTo(CanvasElement<Object?> other) => id.compareTo(other.id);
-
-  CanvasElement<E> cast<E>() => CanvasElement(
-        value,
-        id: id,
-        data: data as E,
-        layer: layer,
-      );
 }
