@@ -18,6 +18,8 @@ class WidgetCanvasSharedData extends InheritedWidget {
 
   final double rulerUnit;
 
+  double get scaleFactor => rulerUnit / WidgetCanvasChildDelegate.rulerUnit;
+
   @override
   bool updateShouldNotify(covariant WidgetCanvasSharedData oldWidget) {
     return rulerUnit != oldWidget.rulerUnit;
