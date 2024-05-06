@@ -23,8 +23,8 @@ class MovableCanvasElementWidget<T> extends StatefulWidget {
 }
 
 class _MovableCanvasElementWidgetState<T> extends State<MovableCanvasElementWidget<T>> {
-  ValueChanged<Offset> get onCanvasElementMove =>
-      (coordinate) => widget.onElementsChanged(widget.elements.markElementIsPerminantVisible(widget.data..coordinate = coordinate));
+  ValueChanged<Offset> get onCanvasElementMove => (coordinate) =>
+      widget.onElementsChanged(widget.elements.markElementIsPerminantVisible(widget.data..coordinate = coordinate));
 
   VoidCallback get onCanvasElementMoveEnd => () {
         lastOffset = null;
@@ -37,7 +37,10 @@ class _MovableCanvasElementWidgetState<T> extends State<MovableCanvasElementWidg
 
   @override
   Widget build(BuildContext context) {
-    final WidgetCanvasSharedData(:rulerUnit) = WidgetCanvasSharedData.of(context);
+    final WidgetCanvasSharedData(
+      :rulerHeight,
+      :rulerWidth,
+    ) = WidgetCanvasShared.of(context);
 
     return GestureDetector(
       dragStartBehavior: DragStartBehavior.down,
@@ -62,8 +65,8 @@ class _MovableCanvasElementWidgetState<T> extends State<MovableCanvasElementWidg
         var newOffset = lastOffset! + delta;
         if (widget.snap) {
           newOffset = Offset(
-            (newOffset.dx / rulerUnit).round() * rulerUnit,
-            (newOffset.dy / rulerUnit).round() * rulerUnit,
+            (newOffset.dx / rulerWidth).round() * rulerWidth,
+            (newOffset.dy / rulerHeight).round() * rulerHeight,
           );
         }
 
@@ -88,8 +91,8 @@ class _MovableCanvasElementWidgetState<T> extends State<MovableCanvasElementWidg
         var newOffset = lastOffset! + delta;
         if (widget.snap) {
           newOffset = Offset(
-            (newOffset.dx / rulerUnit).round() * rulerUnit,
-            (newOffset.dy / rulerUnit).round() * rulerUnit,
+            (newOffset.dx / rulerWidth).round() * rulerWidth,
+            (newOffset.dy / rulerHeight).round() * rulerHeight,
           );
         }
 

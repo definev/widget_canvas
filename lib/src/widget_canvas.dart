@@ -1,28 +1,99 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:widget_canvas/widget_canvas.dart';
 
-import 'domain/binary_list.dart';
-import 'domain/canvas_element.dart';
+extension DoubleScaleByWidgetCanvas on double {
+  double relativeValue(BuildContext context) {
+    return this * WidgetCanvasShared.of(context).scaleFactor;
+  }
+}
 
-class WidgetCanvasSharedData extends InheritedWidget {
+class WidgetCanvasSharedData {
   const WidgetCanvasSharedData({
+    this.rulerColor = const Color(0xAA000000),
+    this.rulerHeight = defaultRulerHeight,
+    this.rulerWidth = defaultRulerWidth,
+    required this.scaleFactor,
+    this.rulerThickness = 0.5,
+  });
+
+  static const double defaultRulerHeight = 50;
+  static const double defaultRulerWidth = 50;
+
+  static const defaultValue = WidgetCanvasSharedData(
+    rulerColor: Colors.grey,
+    rulerHeight: defaultRulerHeight,
+    rulerWidth: defaultRulerWidth,
+    scaleFactor: 1,
+  );
+
+  final Color rulerColor;
+  final double rulerWidth;
+  final double rulerHeight;
+  final double rulerThickness;
+  final double scaleFactor;
+
+  @override
+  operator *(double factor) {
+    return WidgetCanvasSharedData(
+      rulerColor: rulerColor,
+      rulerHeight: rulerHeight * factor,
+      rulerWidth: rulerWidth * factor,
+      rulerThickness: rulerThickness * factor,
+      scaleFactor: scaleFactor * factor,
+    );
+  }
+
+  @override
+  operator ==(Object other) {
+    if (other is WidgetCanvasSharedData) {
+      return rulerColor == other.rulerColor &&
+          rulerHeight == other.rulerHeight &&
+          rulerWidth == other.rulerWidth &&
+          rulerThickness == other.rulerThickness;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode => Object.hash(rulerColor, rulerHeight, rulerWidth, rulerThickness);
+
+  WidgetCanvasSharedData copyWith({
+    Color? rulerColor,
+    double? rulerHeight,
+    double? rulerWidth,
+    double? rulerThickness,
+    double? scaleFactor,
+  }) {
+    return WidgetCanvasSharedData(
+      rulerColor: rulerColor ?? this.rulerColor,
+      rulerHeight: rulerHeight ?? this.rulerHeight,
+      rulerWidth: rulerWidth ?? this.rulerWidth,
+      rulerThickness: rulerThickness ?? this.rulerThickness,
+      scaleFactor: scaleFactor ?? this.scaleFactor,
+    );
+  }
+}
+
+class WidgetCanvasShared extends InheritedWidget {
+  const WidgetCanvasShared({
     super.key,
-    this.rulerUnit = WidgetCanvasChildDelegate.rulerUnit,
+    required this.data,
     required super.child,
   });
 
-  static WidgetCanvasSharedData of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<WidgetCanvasSharedData>()!;
-  }
+  static WidgetCanvasSharedData of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<WidgetCanvasShared>()!.data;
 
-  final double rulerUnit;
+  static WidgetCanvasSharedData? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<WidgetCanvasShared>()?.data;
 
-  double get scaleFactor => rulerUnit / WidgetCanvasChildDelegate.rulerUnit;
+  final WidgetCanvasSharedData data;
 
   @override
-  bool updateShouldNotify(covariant WidgetCanvasSharedData oldWidget) {
-    return rulerUnit != oldWidget.rulerUnit;
+  bool updateShouldNotify(covariant WidgetCanvasShared oldWidget) {
+    return data != oldWidget.data;
   }
 }
 
@@ -103,6 +174,7 @@ class WidgetCanvasTwoDimensionalViewport<T> extends TwoDimensionalViewport {
   @override
   RenderTwoDimensionalViewport createRenderObject(BuildContext context) {
     return WidgetCanvasRenderTwoDimensionalViewport<T>(
+      context: context,
       childManager: context as TwoDimensionalChildManager,
       delegate: delegate,
       horizontalAxisDirection: horizontalAxisDirection,
@@ -134,6 +206,7 @@ class WidgetCanvasTwoDimensionalViewport<T> extends TwoDimensionalViewport {
 
 class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalViewport {
   WidgetCanvasRenderTwoDimensionalViewport({
+    required this.context,
     required super.horizontalOffset,
     required super.horizontalAxisDirection,
     required super.verticalOffset,
@@ -148,6 +221,8 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
   static const int rulerVerticalLayer = 1;
   static const int rulerHorizontalLayer = 2;
   static const int contentLayer = 3;
+
+  final BuildContext context;
 
   List<CanvasElement<T>>? _visibleElements;
 
@@ -220,6 +295,8 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
 
   @override
   void layoutChildSequence() {
+    final data = WidgetCanvasShared.maybeOf(context) ?? WidgetCanvasSharedData.defaultValue;
+
     if (_visibleElements case final elements?) {
       for (final element in elements) {
         element.removeListener(markNeedsLayout);
@@ -237,19 +314,24 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
 
     final canvasDelegate = delegate as WidgetCanvasChildDelegate<T>;
     if (canvasDelegate.showGrid) {
-      final dimension = canvasDelegate.unit;
-      final baseColumn = (horizontalPixels / dimension).floor();
-      for (var column = 0; column <= (viewportWidth + cacheExtent) ~/ dimension; column += 1) {
+      final rulerHeight = data.rulerHeight;
+      final rulerWidth = data.rulerWidth;
+      final thickness = data.rulerThickness * data.scaleFactor;
+
+      final baseColumn = (horizontalPixels / rulerWidth).floor();
+      for (var column = 0; column <= (viewportWidth + cacheExtent) ~/ rulerWidth; column += 1) {
         if (buildOrObtainChildFor(ChildVicinity(xIndex: column, yIndex: rulerVerticalLayer)) case final child?) {
           child.layout(constraints.loosen());
-          parentDataOf(child).layoutOffset = Offset((baseColumn + column) * dimension, 0) - Offset(horizontalPixels, 0);
+          parentDataOf(child).layoutOffset =
+              Offset((baseColumn + column) * rulerWidth - thickness / 2, 0) - Offset(horizontalPixels, 0);
         }
       }
-      final baseRow = (verticalPixels / dimension).floor();
-      for (var row = 0; row <= (viewportHeight + cacheExtent) ~/ dimension; row += 1) {
+      final baseRow = (verticalPixels / rulerHeight).floor();
+      for (var row = 0; row <= (viewportHeight + cacheExtent) ~/ rulerHeight; row += 1) {
         if (buildOrObtainChildFor(ChildVicinity(xIndex: row, yIndex: rulerHorizontalLayer)) case final child?) {
           child.layout(constraints.loosen());
-          parentDataOf(child).layoutOffset = Offset(0, (baseRow + row) * dimension) - Offset(0, verticalPixels);
+          parentDataOf(child).layoutOffset =
+              Offset(0, (baseRow + row) * rulerHeight - thickness / 2) - Offset(0, verticalPixels);
         }
       }
     }
@@ -280,10 +362,7 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
     required this.elements,
     required this.builder,
     this.showGrid = true,
-    this.unit = rulerUnit,
   });
-
-  static const double rulerUnit = 100;
 
   static Comparator<CanvasElement<T>> defaultCompare<T>(Axis axis) => switch (axis) {
         Axis.horizontal => (a, b) => a.coordinate.dx.compareTo(b.coordinate.dx),
@@ -293,25 +372,49 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
   final WidgetCanvasElements<T> elements;
   final Widget Function(BuildContext context, CanvasElement<T> element) builder;
   final bool showGrid;
-  final double unit;
 
   Map<ChildVicinity, CanvasElement<T>?> _sortedElements = {};
 
   @override
   Widget? build(BuildContext context, ChildVicinity vicinity) {
+    final theme = Theme.of(context);
+    final data = WidgetCanvasShared.maybeOf(context) ?? WidgetCanvasSharedData.defaultValue;
+    final WidgetCanvasSharedData(:scaleFactor, :rulerColor, :rulerThickness) = data;
+
     if (vicinity == const ChildVicinity(xIndex: -1, yIndex: 0)) {
       return const SizedBox.square();
     }
     if (vicinity.yIndex == WidgetCanvasRenderTwoDimensionalViewport.rulerVerticalLayer) {
-      return const VerticalDivider(width: 1);
+      return VerticalDivider(
+        width: rulerThickness * scaleFactor,
+        thickness: rulerThickness * scaleFactor,
+        color: rulerColor,
+      );
     }
     if (vicinity.yIndex == WidgetCanvasRenderTwoDimensionalViewport.rulerHorizontalLayer) {
-      return const Divider(height: 1);
+      return Divider(
+        height: rulerThickness * scaleFactor,
+        thickness: rulerThickness * scaleFactor,
+        color: rulerColor,
+      );
     }
     if (_sortedElements[vicinity] case final element?) {
-      return WidgetCanvasSharedData(
-        rulerUnit: unit,
-        child: Builder(builder: (context) => builder(context, element)),
+      return WidgetCanvasShared(
+        data: data,
+        child: Theme(
+          data: theme.copyWith(
+            textTheme: theme.textTheme.apply(fontSizeFactor: scaleFactor),
+          ),
+          child: Builder(
+            builder: (context) {
+              final theme = Theme.of(context);
+              return DefaultTextStyle(
+                style: theme.textTheme.titleLarge!.copyWith(color: Colors.black),
+                child: Builder(builder: (context) => builder(context, element)),
+              );
+            },
+          ),
+        ),
       );
     }
 
