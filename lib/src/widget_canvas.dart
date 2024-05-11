@@ -34,7 +34,6 @@ class WidgetCanvasSharedData {
   final double rulerThickness;
   final double scaleFactor;
 
-  @override
   operator *(double factor) {
     return WidgetCanvasSharedData(
       rulerColor: rulerColor,
@@ -220,7 +219,8 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
 
   static const int rulerVerticalLayer = 1;
   static const int rulerHorizontalLayer = 2;
-  static const int contentLayer = 3;
+  static const int coordinateLayer = 3;
+  static const int contentLayer = 10;
 
   final BuildContext context;
 
@@ -319,7 +319,8 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
       final thickness = data.rulerThickness * data.scaleFactor;
 
       final baseColumn = (horizontalPixels / rulerWidth).floor();
-      for (var column = 0; column <= (viewportWidth + cacheExtent) ~/ rulerWidth; column += 1) {
+      final maxColumn = (viewportWidth + cacheExtent) ~/ rulerWidth;
+      for (var column = 0; column <= maxColumn; column += 1) {
         if (buildOrObtainChildFor(ChildVicinity(xIndex: column, yIndex: rulerVerticalLayer)) case final child?) {
           child.layout(constraints.loosen());
           parentDataOf(child).layoutOffset =
@@ -327,13 +328,15 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
         }
       }
       final baseRow = (verticalPixels / rulerHeight).floor();
-      for (var row = 0; row <= (viewportHeight + cacheExtent) ~/ rulerHeight; row += 1) {
+      final maxRow = (viewportHeight + cacheExtent) ~/ rulerHeight;
+      for (var row = 0; row <= maxRow; row += 1) {
         if (buildOrObtainChildFor(ChildVicinity(xIndex: row, yIndex: rulerHorizontalLayer)) case final child?) {
           child.layout(constraints.loosen());
           parentDataOf(child).layoutOffset =
               Offset(0, (baseRow + row) * rulerHeight - thickness / 2) - Offset(0, verticalPixels);
         }
       }
+
     }
 
     _visibleElements = getVisibleElement(
@@ -379,7 +382,7 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
   Widget? build(BuildContext context, ChildVicinity vicinity) {
     final theme = Theme.of(context);
     final data = WidgetCanvasShared.maybeOf(context) ?? WidgetCanvasSharedData.defaultValue;
-    final WidgetCanvasSharedData(:scaleFactor, :rulerColor, :rulerThickness) = data;
+    final WidgetCanvasSharedData(:scaleFactor, :rulerColor, :rulerThickness, :rulerWidth, :rulerHeight) = data;
 
     if (vicinity == const ChildVicinity(xIndex: -1, yIndex: 0)) {
       return const SizedBox.square();
@@ -398,6 +401,7 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
         color: rulerColor,
       );
     }
+
     if (_sortedElements[vicinity] case final element?) {
       return WidgetCanvasShared(
         data: data,
