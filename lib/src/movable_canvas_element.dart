@@ -9,12 +9,14 @@ class MovableCanvasElementWidget<T> extends StatefulWidget {
     required this.elements,
     required this.onElementsChanged,
     required this.child,
+    this.onCanvasElementMove,
     this.snap = false,
   });
 
   final CanvasElement<T> data;
   final WidgetCanvasElements<T> elements;
   final ValueChanged<WidgetCanvasElements<T>> onElementsChanged;
+  final ValueChanged<Offset>? onCanvasElementMove;
   final bool snap;
   final Widget child;
 
@@ -23,8 +25,10 @@ class MovableCanvasElementWidget<T> extends StatefulWidget {
 }
 
 class _MovableCanvasElementWidgetState<T> extends State<MovableCanvasElementWidget<T>> {
-  ValueChanged<Offset> get onCanvasElementMove => (coordinate) =>
-      widget.onElementsChanged(widget.elements.markElementIsPerminantVisible(widget.data..coordinate = coordinate));
+  ValueChanged<Offset> get onCanvasElementMove => (coordinate) {
+        widget.onCanvasElementMove?.call(coordinate);
+        widget.onElementsChanged(widget.elements.markElementIsPerminantVisible(widget.data..coordinate = coordinate));
+      };
 
   VoidCallback get onCanvasElementMoveEnd => () {
         lastOffset = null;
