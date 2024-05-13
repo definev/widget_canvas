@@ -3,98 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:widget_canvas/widget_canvas.dart';
 
-extension DoubleScaleByWidgetCanvas on double {
-  double relativeValue(BuildContext context) {
-    return this * WidgetCanvasShared.of(context).scaleFactor;
-  }
-}
-
-class WidgetCanvasSharedData {
-  const WidgetCanvasSharedData({
-    this.rulerColor = const Color(0xAA000000),
-    this.rulerHeight = defaultRulerHeight,
-    this.rulerWidth = defaultRulerWidth,
-    required this.scaleFactor,
-    this.rulerThickness = 0.5,
-  });
-
-  static const double defaultRulerHeight = 50;
-  static const double defaultRulerWidth = 50;
-
-  static const defaultValue = WidgetCanvasSharedData(
-    rulerColor: Colors.grey,
-    rulerHeight: defaultRulerHeight,
-    rulerWidth: defaultRulerWidth,
-    scaleFactor: 1,
-  );
-
-  final Color rulerColor;
-  final double rulerWidth;
-  final double rulerHeight;
-  final double rulerThickness;
-  final double scaleFactor;
-
-  operator *(double factor) {
-    return WidgetCanvasSharedData(
-      rulerColor: rulerColor,
-      rulerHeight: rulerHeight * factor,
-      rulerWidth: rulerWidth * factor,
-      rulerThickness: rulerThickness * factor,
-      scaleFactor: scaleFactor * factor,
-    );
-  }
-
-  @override
-  operator ==(Object other) {
-    if (other is WidgetCanvasSharedData) {
-      return rulerColor == other.rulerColor &&
-          rulerHeight == other.rulerHeight &&
-          rulerWidth == other.rulerWidth &&
-          rulerThickness == other.rulerThickness;
-    }
-    return false;
-  }
-
-  @override
-  int get hashCode => Object.hash(rulerColor, rulerHeight, rulerWidth, rulerThickness);
-
-  WidgetCanvasSharedData copyWith({
-    Color? rulerColor,
-    double? rulerHeight,
-    double? rulerWidth,
-    double? rulerThickness,
-    double? scaleFactor,
-  }) {
-    return WidgetCanvasSharedData(
-      rulerColor: rulerColor ?? this.rulerColor,
-      rulerHeight: rulerHeight ?? this.rulerHeight,
-      rulerWidth: rulerWidth ?? this.rulerWidth,
-      rulerThickness: rulerThickness ?? this.rulerThickness,
-      scaleFactor: scaleFactor ?? this.scaleFactor,
-    );
-  }
-}
-
-class WidgetCanvasShared extends InheritedWidget {
-  const WidgetCanvasShared({
-    super.key,
-    required this.data,
-    required super.child,
-  });
-
-  static WidgetCanvasSharedData of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<WidgetCanvasShared>()!.data;
-
-  static WidgetCanvasSharedData? maybeOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<WidgetCanvasShared>()?.data;
-
-  final WidgetCanvasSharedData data;
-
-  @override
-  bool updateShouldNotify(covariant WidgetCanvasShared oldWidget) {
-    return data != oldWidget.data;
-  }
-}
+export 'domain/widget_canvas_theme.dart';
 
 class WidgetCanvas<T> extends TwoDimensionalScrollView {
   const WidgetCanvas._({
@@ -295,7 +204,7 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
 
   @override
   void layoutChildSequence() {
-    final data = WidgetCanvasShared.maybeOf(context) ?? WidgetCanvasSharedData.defaultValue;
+    final data = WidgetCanvasTheme.maybeOf(context) ?? WidgetCanvasThemeData.defaultValue;
 
     if (_visibleElements case final elements?) {
       for (final element in elements) {
@@ -336,7 +245,6 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
               Offset(0, (baseRow + row) * rulerHeight - thickness / 2) - Offset(0, verticalPixels);
         }
       }
-
     }
 
     _visibleElements = getVisibleElement(
@@ -381,8 +289,8 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
   @override
   Widget? build(BuildContext context, ChildVicinity vicinity) {
     final theme = Theme.of(context);
-    final data = WidgetCanvasShared.maybeOf(context) ?? WidgetCanvasSharedData.defaultValue;
-    final WidgetCanvasSharedData(:scaleFactor, :rulerColor, :rulerThickness, :rulerWidth, :rulerHeight) = data;
+    final data = WidgetCanvasTheme.maybeOf(context) ?? WidgetCanvasThemeData.defaultValue;
+    final WidgetCanvasThemeData(:scaleFactor, :rulerColor, :rulerThickness) = data;
 
     if (vicinity == const ChildVicinity(xIndex: -1, yIndex: 0)) {
       return const SizedBox.square();
@@ -403,7 +311,7 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
     }
 
     if (_sortedElements[vicinity] case final element?) {
-      return WidgetCanvasShared(
+      return WidgetCanvasTheme(
         data: data,
         child: Theme(
           data: theme.copyWith(

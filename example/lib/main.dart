@@ -68,7 +68,7 @@ class _HomeViewState extends State<HomeView> {
                 elements: elements.value,
                 builder: (context, element) => ListenableBuilder(
                   listenable: snap,
-                  builder: (context, __) => MovableCanvasElementWidget<int>(
+                  builder: (context, __) => MovableCanvasElement<int>(
                     element,
                     snap: snap.value,
                     elements: elements.value,

@@ -1,9 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:widget_canvas/src/domain/widget_canvas_theme.dart';
 import 'package:widget_canvas/widget_canvas.dart';
 
-class MovableCanvasElementWidget<T> extends StatefulWidget {
-  const MovableCanvasElementWidget(
+class MovableCanvasElement<T> extends StatefulWidget {
+  const MovableCanvasElement(
     this.data, {
     super.key,
     required this.elements,
@@ -21,10 +22,10 @@ class MovableCanvasElementWidget<T> extends StatefulWidget {
   final Widget child;
 
   @override
-  State<MovableCanvasElementWidget<T>> createState() => _MovableCanvasElementWidgetState<T>();
+  State<MovableCanvasElement<T>> createState() => _MovableCanvasElementState<T>();
 }
 
-class _MovableCanvasElementWidgetState<T> extends State<MovableCanvasElementWidget<T>> {
+class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
   ValueChanged<Offset> get onCanvasElementMove => (coordinate) {
         widget.onCanvasElementMove?.call(coordinate);
         widget.onElementsChanged(widget.elements.markElementIsPerminantVisible(widget.data..coordinate = coordinate));
@@ -41,10 +42,7 @@ class _MovableCanvasElementWidgetState<T> extends State<MovableCanvasElementWidg
 
   @override
   Widget build(BuildContext context) {
-    final WidgetCanvasSharedData(
-      :rulerHeight,
-      :rulerWidth,
-    ) = WidgetCanvasShared.of(context);
+    final WidgetCanvasThemeData(:rulerHeight, :rulerWidth) = WidgetCanvasTheme.of(context);
 
     return GestureDetector(
       dragStartBehavior: DragStartBehavior.down,
