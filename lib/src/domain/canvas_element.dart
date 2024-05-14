@@ -20,12 +20,12 @@ class CanvasElement<T> extends ValueNotifier<Coordinate> implements Comparable<C
   Coordinate get coordinate => value;
   set coordinate(Coordinate coordinate) => value = coordinate;
 
-  bool _isPerminantVisible = false;
-  bool get isPerminantVisible => _isPerminantVisible;
+  final ValueNotifier<bool> _isPerminantVisible = ValueNotifier(false);
+  late ValueNotifier<bool> isPerminantVisibleNotifier = _isPerminantVisible;
+  bool get isPerminantVisible => _isPerminantVisible.value;
   set isPerminantVisible(bool value) {
-    if (_isPerminantVisible == value) return;
-    _isPerminantVisible = value;
-    notifyListeners();
+    if (_isPerminantVisible.value == value) return;
+    _isPerminantVisible.value = value;
   }
 
   late final ChildVicinity vicinity = ChildVicinity(

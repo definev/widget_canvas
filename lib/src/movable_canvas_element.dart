@@ -1,6 +1,5 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:widget_canvas/src/domain/widget_canvas_theme.dart';
 import 'package:widget_canvas/widget_canvas.dart';
 
 class MovableCanvasElement<T> extends StatefulWidget {
