@@ -196,19 +196,19 @@ class WidgetCanvasElements<T> {
   }
 
   WidgetCanvasElements<T> remove(int id) {
-    var elements = _list.whereIndexed((element) => element.id.compareTo(id));
-    if (elements?.list.isEmpty == true) return this;
+    var result = _list.whereIndexed((element) => element.id.compareTo(id));
+    if (result?.list.isEmpty == true) return this;
 
     final newElements = BinaryList<CanvasElement<T>>(
-      list: _list.list,
-      compare: (a, b) => a.id.compareTo(id),
+      list: [..._list.list],
+      compare: (a, b) => a.id.compareTo(b.id),
       sortingStrategy: SortingStrategy.quick,
     );
-    elements = newElements.whereIndexed((element) => element.id.compareTo(id));
-    if (elements == null || elements.list.isEmpty) return this;
+    result = newElements.whereIndexed((element) => element.id.compareTo(id));
+    if (result == null || result.list.isEmpty) return this;
 
     return WidgetCanvasElements<T>._(
-      list: _list.remove(elements.list.first),
+      list: _list.remove(result.list.first),
       perminantVisibleSet: _perminantVisibleSet,
     );
   }
