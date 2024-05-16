@@ -196,7 +196,15 @@ class WidgetCanvasElements<T> {
   }
 
   WidgetCanvasElements<T> remove(int id) {
-    final elements = _list.whereIndexed((element) => element.id.compareTo(id));
+    var elements = _list.whereIndexed((element) => element.id.compareTo(id));
+    if (elements?.list.isEmpty == true) return this;
+
+    final newElements = BinaryList<CanvasElement<T>>(
+      list: _list.list,
+      compare: (a, b) => a.id.compareTo(id),
+      sortingStrategy: SortingStrategy.quick,
+    );
+    elements = newElements.whereIndexed((element) => element.id.compareTo(id));
     if (elements == null || elements.list.isEmpty) return this;
 
     return WidgetCanvasElements<T>._(
