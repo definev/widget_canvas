@@ -81,7 +81,8 @@ class WidgetCanvasTwoDimensionalViewport<T> extends TwoDimensionalViewport {
 
   @override
   RenderTwoDimensionalViewport createRenderObject(BuildContext context) {
-    return WidgetCanvasRenderTwoDimensionalViewport<T>(
+    final delegate = this.delegate as WidgetCanvasChildDelegate<T>;
+    final renderViewport = WidgetCanvasRenderTwoDimensionalViewport<T>(
       context: context,
       childManager: context as TwoDimensionalChildManager,
       delegate: delegate,
@@ -93,15 +94,19 @@ class WidgetCanvasTwoDimensionalViewport<T> extends TwoDimensionalViewport {
       cacheExtent: cacheExtent,
       clipBehavior: clipBehavior,
     );
+
+    delegate.renderViewport = renderViewport;
+
+    return renderViewport;
   }
 
   @override
   void updateRenderObject(
     BuildContext context,
-    covariant WidgetCanvasRenderTwoDimensionalViewport renderObject,
+    covariant WidgetCanvasRenderTwoDimensionalViewport<T> renderObject,
   ) {
     renderObject
-      ..delegate = delegate
+      ..delegate = ((delegate as WidgetCanvasChildDelegate<T>)..renderViewport = renderObject)
       ..verticalAxisDirection = verticalAxisDirection
       ..verticalOffset = verticalOffset
       ..horizontalAxisDirection = horizontalAxisDirection
@@ -135,15 +140,15 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
 
   List<CanvasElement<T>>? _visibleElements;
 
-  Map<ChildVicinity, CanvasElement<T>?>? _sortedElements;
+  Map<ChildVicinity, CanvasElement<T>?>? sortedElements = {};
 
   List<CanvasElement<T>> getVisibleElement(
     WidgetCanvasElements<T> elements, {
-    required Offset topLeftScreen,
-    required Offset bottomRightScreen,
+    required Offset topLeftView,
+    required Offset bottomRightView,
   }) {
-    _sortedElements = null;
-    _sortedElements = {};
+    sortedElements = null;
+    sortedElements = {};
 
     (Offset topLeft, Offset bottomRight) getCorner(CanvasElement<T> element) {
       final topLeft = element.coordinate;
@@ -152,25 +157,26 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
       return (topLeft, bottomRight);
     }
 
-    var sorted = elements.list.whereIndexed(
-      (element) {
-        final (topLeft, bottomRight) = getCorner(element);
-        return switch (true) {
-          _ when topLeft.dx < topLeftScreen.dx && bottomRight.dx < topLeftScreen.dx => -1,
-          _ when topLeft.dx > bottomRightScreen.dx && bottomRight.dx > bottomRightScreen.dx => 1,
-          _ => 0,
-        };
-      },
-    );
+    BinaryList<CanvasElement<T>>? sorted = elements.list;
+    sorted = sorted //
+        .sort(WidgetCanvasChildDelegate.defaultCompare(Axis.horizontal))
+        .whereIndexed((element) {
+      final (topLeft, bottomRight) = getCorner(element);
+      return switch (true) {
+        _ when topLeft.dx < topLeftView.dx && bottomRight.dx < topLeftView.dx => -1,
+        _ when topLeft.dx > bottomRightView.dx && bottomRight.dx > bottomRightView.dx => 1,
+        _ => 0,
+      };
+    });
 
     sorted = sorted //
-        ?.binaryList(WidgetCanvasChildDelegate.defaultCompare(Axis.vertical))
+        ?.sort(WidgetCanvasChildDelegate.defaultCompare(Axis.vertical))
         .whereIndexed(
       (element) {
         final (topLeft, bottomRight) = getCorner(element);
         return switch (true) {
-          _ when topLeft.dy < topLeftScreen.dy && bottomRight.dy < topLeftScreen.dy => -1,
-          _ when topLeft.dy > bottomRightScreen.dy && bottomRight.dy > bottomRightScreen.dy => 1,
+          _ when topLeft.dy < topLeftView.dy && bottomRight.dy < topLeftView.dy => -1,
+          _ when topLeft.dy > bottomRightView.dy && bottomRight.dy > bottomRightView.dy => 1,
           _ => 0,
         };
       },
@@ -188,17 +194,16 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
     }
 
     for (final element in list) {
-      _sortedElements![element.vicinity] = element;
+      sortedElements![element.vicinity] = element;
     }
 
-    (delegate as WidgetCanvasChildDelegate)._sortedElements = _sortedElements!;
     return list;
   }
 
   @override
   void dispose() {
     _visibleElements = null;
-    _sortedElements = null;
+    sortedElements = null;
     super.dispose();
   }
 
@@ -228,7 +233,7 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
       final thickness = data.rulerThickness * data.scaleFactor;
 
       final baseColumn = (horizontalPixels / rulerWidth).floor();
-      final maxColumn = (viewportWidth + cacheExtent) ~/ rulerWidth;
+      final maxColumn = viewportWidth ~/ rulerWidth + 1;
       for (var column = 0; column <= maxColumn; column += 1) {
         if (buildOrObtainChildFor(ChildVicinity(xIndex: column, yIndex: rulerVerticalLayer)) case final child?) {
           child.layout(constraints.loosen());
@@ -237,7 +242,7 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
         }
       }
       final baseRow = (verticalPixels / rulerHeight).floor();
-      final maxRow = (viewportHeight + cacheExtent) ~/ rulerHeight;
+      final maxRow = viewportHeight ~/ rulerHeight + 1;
       for (var row = 0; row <= maxRow; row += 1) {
         if (buildOrObtainChildFor(ChildVicinity(xIndex: row, yIndex: rulerHorizontalLayer)) case final child?) {
           child.layout(constraints.loosen());
@@ -249,8 +254,8 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
 
     _visibleElements = getVisibleElement(
       canvasDelegate.elements,
-      topLeftScreen: topLeft - Offset(cacheExtent, cacheExtent),
-      bottomRightScreen: bottomRight + Offset(cacheExtent, cacheExtent),
+      topLeftView: topLeft - Offset(cacheExtent, cacheExtent),
+      bottomRightView: bottomRight + Offset(cacheExtent, cacheExtent),
     );
 
     for (final element in _visibleElements!) {
@@ -266,73 +271,4 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
     verticalOffset.applyContentDimensions(double.negativeInfinity, double.infinity);
     horizontalOffset.applyContentDimensions(double.negativeInfinity, double.infinity);
   }
-}
-
-class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
-  WidgetCanvasChildDelegate({
-    required this.elements,
-    required this.builder,
-    this.showGrid = true,
-  });
-
-  static Comparator<CanvasElement<T>> defaultCompare<T>(Axis axis) => switch (axis) {
-        Axis.horizontal => (a, b) => a.coordinate.dx.compareTo(b.coordinate.dx),
-        Axis.vertical => (a, b) => a.coordinate.dy.compareTo(b.coordinate.dy),
-      };
-
-  final WidgetCanvasElements<T> elements;
-  final Widget Function(BuildContext context, CanvasElement<T> element) builder;
-  final bool showGrid;
-
-  Map<ChildVicinity, CanvasElement<T>?> _sortedElements = {};
-
-  @override
-  Widget? build(BuildContext context, ChildVicinity vicinity) {
-    final theme = Theme.of(context);
-    final data = WidgetCanvasTheme.maybeOf(context) ?? WidgetCanvasThemeData.defaultValue;
-    final WidgetCanvasThemeData(:scaleFactor, :rulerColor, :rulerThickness) = data;
-
-    if (vicinity == const ChildVicinity(xIndex: -1, yIndex: 0)) {
-      return const SizedBox.square();
-    }
-    if (vicinity.yIndex == WidgetCanvasRenderTwoDimensionalViewport.rulerVerticalLayer) {
-      return VerticalDivider(
-        width: rulerThickness * scaleFactor,
-        thickness: rulerThickness * scaleFactor,
-        color: rulerColor,
-      );
-    }
-    if (vicinity.yIndex == WidgetCanvasRenderTwoDimensionalViewport.rulerHorizontalLayer) {
-      return Divider(
-        height: rulerThickness * scaleFactor,
-        thickness: rulerThickness * scaleFactor,
-        color: rulerColor,
-      );
-    }
-
-    if (_sortedElements[vicinity] case final element?) {
-      return WidgetCanvasTheme(
-        data: data,
-        child: Theme(
-          data: theme.copyWith(
-            textTheme: theme.textTheme.apply(fontSizeFactor: scaleFactor),
-          ),
-          child: Builder(
-            builder: (context) {
-              final theme = Theme.of(context);
-              return DefaultTextStyle(
-                style: theme.textTheme.titleLarge!.copyWith(color: Colors.black),
-                child: Builder(builder: (context) => builder(context, element)),
-              );
-            },
-          ),
-        ),
-      );
-    }
-
-    return null;
-  }
-
-  @override
-  bool shouldRebuild(covariant WidgetCanvasChildDelegate<T> oldDelegate) => elements != oldDelegate.elements;
 }
