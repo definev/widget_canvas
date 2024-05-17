@@ -145,7 +145,7 @@ extension ListToBinaryListX<T extends Comparable<Object>> on List<T> {
 extension BinaryListX<T extends Comparable<Object>> on BinaryList<T> {
   ValueNotifier<BinaryList<T>> toValueNotifier() => ValueNotifier(this);
 
-  BinaryList<T> binaryList(Comparator<T> compare) => BinaryList(list: list, compare: compare);
+  BinaryList<T> sort(Comparator<T> compare) => BinaryList(list: list, compare: compare);
 }
 
 class WidgetCanvasElements<T> {
@@ -184,7 +184,7 @@ class WidgetCanvasElements<T> {
     return (sortedByIdList.list.lastOrNull?.id ?? -1) + 1;
   }
 
-  WidgetCanvasElements<T> insert<E extends T>({required CanvasElement<E> Function(int id) builder}) {
+  WidgetCanvasElements<T> insert({required CanvasElement<T> Function(int id) builder}) {
     return WidgetCanvasElements<T>._(
       list: BinaryList<CanvasElement<T>>(
         list: [..._list._list, builder(_nextId)],
@@ -197,13 +197,22 @@ class WidgetCanvasElements<T> {
 
   WidgetCanvasElements<T> remove(int id) {
     var result = _list.whereIndexed((element) => element.id.compareTo(id));
-    if (result?.list.isEmpty == true) return this;
+    if (result case final result?) {
+      final first = result.list.firstOrNull;
+      if (first != null) {
+        return WidgetCanvasElements<T>._(
+          list: _list.remove(first),
+          perminantVisibleSet: _perminantVisibleSet,
+        );
+      }
+    }
 
     final newElements = BinaryList<CanvasElement<T>>(
       list: [..._list.list],
       compare: (a, b) => a.id.compareTo(b.id),
       sortingStrategy: SortingStrategy.quick,
     );
+
     result = newElements.whereIndexed((element) => element.id.compareTo(id));
     if (result == null || result.list.isEmpty) return this;
 
