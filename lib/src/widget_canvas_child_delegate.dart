@@ -29,17 +29,21 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
       return const SizedBox.square();
     }
     if (vicinity.yIndex == WidgetCanvasRenderTwoDimensionalViewport.rulerVerticalLayer) {
-      return VerticalDivider(
-        width: rulerThickness * scaleFactor,
-        thickness: rulerThickness * scaleFactor,
-        color: rulerColor,
+      return IgnorePointer(
+        child: VerticalDivider(
+          width: rulerThickness * scaleFactor,
+          thickness: rulerThickness * scaleFactor,
+          color: rulerColor,
+        ),
       );
     }
     if (vicinity.yIndex == WidgetCanvasRenderTwoDimensionalViewport.rulerHorizontalLayer) {
-      return Divider(
-        height: rulerThickness * scaleFactor,
-        thickness: rulerThickness * scaleFactor,
-        color: rulerColor,
+      return IgnorePointer(
+        child: Divider(
+          height: rulerThickness * scaleFactor,
+          thickness: rulerThickness * scaleFactor,
+          color: rulerColor,
+        ),
       );
     }
 
