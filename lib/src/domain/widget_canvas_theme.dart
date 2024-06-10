@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 
 class WidgetCanvasThemeData {
@@ -33,7 +31,7 @@ class WidgetCanvasThemeData {
       rulerHeight: rulerHeight * factor,
       rulerWidth: rulerWidth * factor,
       rulerThickness: rulerThickness * factor,
-      scaleFactor: scaleFactor * factor,
+      scaleFactor: factor,
     );
   }
 
@@ -86,5 +84,11 @@ class WidgetCanvasTheme extends InheritedWidget {
   @override
   bool updateShouldNotify(covariant WidgetCanvasTheme oldWidget) {
     return data != oldWidget.data;
+  }
+}
+
+extension WidgetCanvasThemeX on Widget {
+  Widget overrideWidgetCanvasTheme(WidgetCanvasThemeData canvasTheme) {
+    return WidgetCanvasTheme(data: canvasTheme, child: this);
   }
 }
