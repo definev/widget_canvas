@@ -1,4 +1,3 @@
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -14,6 +13,7 @@ class WidgetCanvasZoomDetector extends StatefulWidget {
     required this.horizontalScrollController,
     required this.verticalScrollController,
     required this.child,
+    required this.scaleCanvasThemeDataBuilder,
   });
 
   static Offset localToViewport(
@@ -64,10 +64,6 @@ class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
   Offset? _referenceFocalPoint;
   double? _scaleStart;
 
-  WidgetCanvasThemeData getCanvasTheme(double scale) {
-    return GateCanvas.defaultWidgetCanvasTheme * scale;
-  }
-
   Offset _pointToOffset(WidgetCanvasThemeData canvasTheme, Offset delta) {
     final result = Offset(
       delta.dx * canvasTheme.rulerWidth,
@@ -101,7 +97,7 @@ class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
 
     widget.onUpdateScale(desiredScale);
 
-    final newCanvasTheme = getCanvasTheme(desiredScale);
+    final newCanvasTheme = widget.scaleCanvasThemeDataBuilder(desiredScale);
 
     final Offset focalPointSceneScaled = WidgetCanvasZoomDetector.localToViewportPoint(
       newCanvasTheme,
@@ -119,7 +115,7 @@ class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
 
   @override
   Widget build(BuildContext context) {
-    final canvasTheme = getCanvasTheme(widget.scaleFactor);
+    final canvasTheme = widget.scaleCanvasThemeDataBuilder(widget.scaleFactor);
 
     return RawGestureDetector(
       gestures: {
