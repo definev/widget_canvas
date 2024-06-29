@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:widget_canvas/widget_canvas.dart';
+
 
 typedef DistanceFunction<T> = int Function(T object);
 
@@ -32,7 +30,7 @@ class BinaryList<T extends Comparable<Object>> {
   }
 
   final List<T> _list;
-  List<T> get list => _list;
+  List<T> get rawList => _list;
   final Comparator<T> _compare;
   Comparator<T> get compare => _compare;
 
@@ -42,14 +40,14 @@ class BinaryList<T extends Comparable<Object>> {
 
   BinaryList<T> add(T element) {
     return BinaryList(
-      list: [...list, element],
+      list: [...rawList, element],
       compare: _compare,
     );
   }
 
   BinaryList<T> addAll(Iterable<T> elements) {
     return BinaryList(
-      list: [...list, ...elements],
+      list: [...rawList, ...elements],
       compare: _compare,
     );
   }
@@ -130,7 +128,7 @@ class BinaryList<T extends Comparable<Object>> {
   @override
   String toString() {
     final buf = StringBuffer();
-    for (final element in list) {
+    for (final element in rawList) {
       buf.write('$element, ');
     }
 
@@ -138,122 +136,6 @@ class BinaryList<T extends Comparable<Object>> {
   }
 }
 
-extension ListToBinaryListX<T extends Comparable<Object>> on List<T> {
-  BinaryList<T> binaryList(Comparator<T> compare) => BinaryList(list: this, compare: compare);
-}
-
 extension BinaryListX<T extends Comparable<Object>> on BinaryList<T> {
-  ValueNotifier<BinaryList<T>> toValueNotifier() => ValueNotifier(this);
-
-  BinaryList<T> sort(Comparator<T> compare) => BinaryList(list: list, compare: compare);
-}
-
-class WidgetCanvasElements<T> {
-  WidgetCanvasElements._({
-    required BinaryList<CanvasElement<T>> list,
-    required Set<CanvasElement<T>> perminantVisibleSet,
-  })  : _list = list,
-        _perminantVisibleSet = perminantVisibleSet;
-
-  factory WidgetCanvasElements.fromList(List<CanvasElement<T>> elements) {
-    return WidgetCanvasElements._(
-      list: elements.binaryList(WidgetCanvasChildDelegate.defaultCompare(Axis.horizontal)),
-      perminantVisibleSet: {},
-    );
-  }
-
-  final BinaryList<CanvasElement<T>> _list;
-  BinaryList<CanvasElement<T>> get list => _list;
-
-  WidgetCanvasElements<T> copyWith({
-    BinaryList<CanvasElement<T>>? binaryList,
-    Set<CanvasElement<T>>? perminantVisibleSet,
-  }) {
-    return WidgetCanvasElements._(
-      list: binaryList ?? _list,
-      perminantVisibleSet: perminantVisibleSet ?? _perminantVisibleSet,
-    );
-  }
-
-  int get _nextId {
-    final sortedByIdList = BinaryList(
-      list: [..._list.list],
-      compare: (a, b) => a.id.compareTo(b.id),
-      sortingStrategy: SortingStrategy.quick,
-    );
-    return (sortedByIdList.list.lastOrNull?.id ?? -1) + 1;
-  }
-
-  WidgetCanvasElements<T> insert({required CanvasElement<T> Function(int id) builder}) {
-    return WidgetCanvasElements<T>._(
-      list: BinaryList<CanvasElement<T>>(
-        list: [..._list._list, builder(_nextId)],
-        compare: _list._compare,
-        sortingStrategy: SortingStrategy.quick,
-      ),
-      perminantVisibleSet: _perminantVisibleSet,
-    );
-  }
-
-  WidgetCanvasElements<T> remove(int id) {
-    var result = _list.whereIndexed((element) => element.id.compareTo(id));
-    if (result case final result?) {
-      final first = result.list.firstOrNull;
-      if (first != null) {
-        return WidgetCanvasElements<T>._(
-          list: _list.remove(first),
-          perminantVisibleSet: _perminantVisibleSet,
-        );
-      }
-    }
-
-    final newElements = BinaryList<CanvasElement<T>>(
-      list: [..._list.list],
-      compare: (a, b) => a.id.compareTo(b.id),
-      sortingStrategy: SortingStrategy.quick,
-    );
-
-    result = newElements.whereIndexed((element) => element.id.compareTo(id));
-    if (result == null || result.list.isEmpty) return this;
-
-    return WidgetCanvasElements<T>._(
-      list: _list.remove(result.list.first),
-      perminantVisibleSet: _perminantVisibleSet,
-    );
-  }
-
-  WidgetCanvasElements<T> removeElement(CanvasElement<T> element) {
-    return WidgetCanvasElements<T>._(
-      list: _list.remove(element),
-      perminantVisibleSet: _perminantVisibleSet,
-    );
-  }
-
-  final Set<CanvasElement<T>> _perminantVisibleSet;
-  Set<CanvasElement<T>> get perminantVisibleSet => _perminantVisibleSet;
-
-  WidgetCanvasElements<T> markElementIsPerminantVisible(CanvasElement<T> value) {
-    final index = binarySearch(_list._list, value);
-    if (index == -1) return this;
-    value.isPerminantVisible = true;
-    _perminantVisibleSet.add(value);
-    _list._list[index] = value;
-
-    return WidgetCanvasElements<T>._(
-      list: _list,
-      perminantVisibleSet: _perminantVisibleSet,
-    );
-  }
-
-  WidgetCanvasElements<T> unmarkElementIsPerminantVisible(CanvasElement<T> value) {
-    final index = binarySearch(_list._list, value);
-    if (index == -1) return this;
-    value.isPerminantVisible = false;
-    _perminantVisibleSet.remove(value);
-
-    return WidgetCanvasElements<T>._(
-      list: _list,
-      perminantVisibleSet: _perminantVisibleSet,
-    );
-  }
+  BinaryList<T> sort(Comparator<T> compare) => BinaryList(list: rawList, compare: compare);
 }

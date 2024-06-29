@@ -1,19 +1,20 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-import 'widget_canvas.dart';
+import '../widget_canvas.dart';
 
 class WidgetCanvasZoomDetector extends StatefulWidget {
   const WidgetCanvasZoomDetector({
     super.key,
     required this.scaleFactor,
-    required this.onUpdateScale,
+    required this.onScaleFactorChanged,
     required this.minScaleFactor,
     required this.maxScaleFactor,
     required this.horizontalScrollController,
     required this.verticalScrollController,
     required this.child,
-    required this.scaleCanvasThemeDataBuilder,
+    this.scaleCanvasThemeDataBuilder =
+        WidgetCanvasZoomDetector.defaultScaleCanvasThemeDataBuilder,
   });
 
   static Offset localToViewport(
@@ -44,9 +45,20 @@ class WidgetCanvasZoomDetector extends StatefulWidget {
     return result;
   }
 
+  static WidgetCanvasThemeData defaultScaleCanvasThemeDataBuilder(
+    BuildContext context,
+    double scale,
+  ) {
+    final canvasTheme = WidgetCanvasTheme.maybeOf(context) ??
+        WidgetCanvasThemeData.defaultValue;
+    return canvasTheme * scale;
+  }
+
   final double scaleFactor;
-  final ValueChanged<double> onUpdateScale;
-  final WidgetCanvasThemeData Function(double scale) scaleCanvasThemeDataBuilder;
+  final ValueChanged<double> onScaleFactorChanged;
+
+  final WidgetCanvasThemeData Function(BuildContext context, double scale)
+      scaleCanvasThemeDataBuilder;
 
   final double minScaleFactor;
   final double maxScaleFactor;
@@ -57,7 +69,8 @@ class WidgetCanvasZoomDetector extends StatefulWidget {
   final Widget child;
 
   @override
-  State<WidgetCanvasZoomDetector> createState() => _WidgetCanvasZoomDetectorState();
+  State<WidgetCanvasZoomDetector> createState() =>
+      _WidgetCanvasZoomDetectorState();
 }
 
 class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
@@ -73,20 +86,25 @@ class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
   }
 
   void _translateCanvas(Offset translate) {
-    widget.horizontalScrollController.jumpTo(widget.horizontalScrollController.offset + translate.dx);
-    widget.verticalScrollController.jumpTo(widget.verticalScrollController.offset + translate.dy);
+    widget.horizontalScrollController
+        .jumpTo(widget.horizontalScrollController.offset + translate.dx);
+    widget.verticalScrollController
+        .jumpTo(widget.verticalScrollController.offset + translate.dy);
   }
 
-  void onStartScale(WidgetCanvasThemeData canvasTheme, ScaleStartDetails details) {
+  void onStartScale(
+      WidgetCanvasThemeData canvasTheme, ScaleStartDetails details) {
     _referenceFocalPoint = WidgetCanvasZoomDetector.localToViewportPoint(
       canvasTheme,
       details.localFocalPoint,
-      origin: Offset(widget.horizontalScrollController.offset, widget.verticalScrollController.offset),
+      origin: Offset(widget.horizontalScrollController.offset,
+          widget.verticalScrollController.offset),
     );
     _scaleStart = widget.scaleFactor;
   }
 
-  void onUpdateScale(WidgetCanvasThemeData canvasTheme, ScaleUpdateDetails details) {
+  void onUpdateScale(
+      WidgetCanvasThemeData canvasTheme, ScaleUpdateDetails details) {
     assert(_referenceFocalPoint != null);
     assert(_scaleStart != null);
 
@@ -95,16 +113,20 @@ class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
     if (desiredScale < widget.minScaleFactor) return;
     if (desiredScale > widget.maxScaleFactor) return;
 
-    widget.onUpdateScale(desiredScale);
+    widget.onScaleFactorChanged(desiredScale);
 
-    final newCanvasTheme = widget.scaleCanvasThemeDataBuilder(desiredScale);
+    final newCanvasTheme =
+        widget.scaleCanvasThemeDataBuilder(context, desiredScale);
 
-    final Offset focalPointSceneScaled = WidgetCanvasZoomDetector.localToViewportPoint(
+    final Offset focalPointSceneScaled =
+        WidgetCanvasZoomDetector.localToViewportPoint(
       newCanvasTheme,
       details.localFocalPoint,
-      origin: Offset(widget.horizontalScrollController.offset, widget.verticalScrollController.offset),
+      origin: Offset(widget.horizontalScrollController.offset,
+          widget.verticalScrollController.offset),
     );
-    final Offset translate = _pointToOffset(newCanvasTheme, _referenceFocalPoint! - focalPointSceneScaled);
+    final Offset translate = _pointToOffset(
+        newCanvasTheme, _referenceFocalPoint! - focalPointSceneScaled);
     _translateCanvas(translate);
   }
 
@@ -115,11 +137,13 @@ class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
 
   @override
   Widget build(BuildContext context) {
-    final canvasTheme = widget.scaleCanvasThemeDataBuilder(widget.scaleFactor);
+    final canvasTheme =
+        widget.scaleCanvasThemeDataBuilder(context, widget.scaleFactor);
 
     return RawGestureDetector(
       gestures: {
-        ScaleGestureRecognizer: GestureRecognizerFactoryWithHandlers<ScaleGestureRecognizer>(
+        ScaleGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<ScaleGestureRecognizer>(
           () => ScaleGestureRecognizer(),
           (instance) => instance
             ..onStart = (details) {
@@ -133,7 +157,10 @@ class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
             },
         ),
       },
-      child: widget.child,
+      child: WidgetCanvasTheme(
+        data: canvasTheme,
+        child: widget.child,
+      ),
     );
   }
 }

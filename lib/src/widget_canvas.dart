@@ -1,9 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:widget_canvas/src/domain/widget_canvas_elements.dart';
 import 'package:widget_canvas/widget_canvas.dart';
 
-export 'domain/widget_canvas_theme.dart';
+export 'widget_canvas/widget_canvas_theme.dart';
 
 class WidgetCanvas<T> extends TwoDimensionalScrollView {
   const WidgetCanvas._({
@@ -29,7 +30,8 @@ class WidgetCanvas<T> extends TwoDimensionalScrollView {
     ScrollableDetails verticalDetails = const ScrollableDetails.vertical(),
     ScrollableDetails horizontalDetails = const ScrollableDetails.horizontal(),
     DragStartBehavior dragStartBehavior = DragStartBehavior.start,
-    ScrollViewKeyboardDismissBehavior keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
+    ScrollViewKeyboardDismissBehavior keyboardDismissBehavior =
+        ScrollViewKeyboardDismissBehavior.manual,
     Axis mainAxis = Axis.vertical,
     bool? primary,
   }) =>
@@ -106,7 +108,8 @@ class WidgetCanvasTwoDimensionalViewport<T> extends TwoDimensionalViewport {
     covariant WidgetCanvasRenderTwoDimensionalViewport<T> renderObject,
   ) {
     renderObject
-      ..delegate = ((delegate as WidgetCanvasChildDelegate<T>)..renderViewport = renderObject)
+      ..delegate = ((delegate as WidgetCanvasChildDelegate<T>)
+        ..renderViewport = renderObject)
       ..verticalAxisDirection = verticalAxisDirection
       ..verticalOffset = verticalOffset
       ..horizontalAxisDirection = horizontalAxisDirection
@@ -117,7 +120,8 @@ class WidgetCanvasTwoDimensionalViewport<T> extends TwoDimensionalViewport {
   }
 }
 
-class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalViewport {
+class WidgetCanvasRenderTwoDimensionalViewport<T>
+    extends RenderTwoDimensionalViewport {
   WidgetCanvasRenderTwoDimensionalViewport({
     required this.context,
     required super.horizontalOffset,
@@ -163,26 +167,32 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
         .whereIndexed((element) {
       final (topLeft, bottomRight) = getCorner(element);
       return switch (true) {
-        _ when topLeft.dx < topLeftView.dx && bottomRight.dx < topLeftView.dx => -1,
-        _ when topLeft.dx > bottomRightView.dx && bottomRight.dx > bottomRightView.dx => 1,
+        _ when topLeft.dx < topLeftView.dx && bottomRight.dx < topLeftView.dx =>
+          -1,
+        _
+            when topLeft.dx > bottomRightView.dx &&
+                bottomRight.dx > bottomRightView.dx =>
+          1,
         _ => 0,
       };
     });
 
     sorted = sorted //
         ?.sort(WidgetCanvasChildDelegate.defaultCompare(Axis.vertical))
-        .whereIndexed(
-      (element) {
-        final (topLeft, bottomRight) = getCorner(element);
-        return switch (true) {
-          _ when topLeft.dy < topLeftView.dy && bottomRight.dy < topLeftView.dy => -1,
-          _ when topLeft.dy > bottomRightView.dy && bottomRight.dy > bottomRightView.dy => 1,
-          _ => 0,
-        };
-      },
-    );
+        .whereIndexed((element) {
+      final (topLeft, bottomRight) = getCorner(element);
+      return switch (true) {
+        _ when topLeft.dy < topLeftView.dy && bottomRight.dy < topLeftView.dy =>
+          -1,
+        _
+            when topLeft.dy > bottomRightView.dy &&
+                bottomRight.dy > bottomRightView.dy =>
+          1,
+        _ => 0,
+      };
+    });
 
-    final list = sorted?.list ?? [];
+    final list = sorted?.rawList ?? [];
 
     for (final selected in elements.perminantVisibleSet) {
       final index = list.indexOf(selected);
@@ -209,7 +219,8 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
 
   @override
   void layoutChildSequence() {
-    final data = WidgetCanvasTheme.maybeOf(context) ?? WidgetCanvasThemeData.defaultValue;
+    final data = WidgetCanvasTheme.maybeOf(context) ??
+        WidgetCanvasThemeData.defaultValue;
 
     if (_visibleElements case final elements?) {
       for (final element in elements) {
@@ -224,7 +235,8 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
     final viewportWidth = viewportDimension.width;
 
     var topLeft = Offset(horizontalPixels, verticalPixels);
-    var bottomRight = Offset(horizontalPixels, verticalPixels) + Offset(viewportWidth, viewportHeight);
+    var bottomRight = Offset(horizontalPixels, verticalPixels) +
+        Offset(viewportWidth, viewportHeight);
 
     final canvasDelegate = delegate as WidgetCanvasChildDelegate<T>;
     if (canvasDelegate.showGrid) {
@@ -235,19 +247,25 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
       final baseColumn = (horizontalPixels / rulerWidth).floor();
       final maxColumn = viewportWidth ~/ rulerWidth + 1;
       for (var column = 0; column <= maxColumn; column += 1) {
-        if (buildOrObtainChildFor(ChildVicinity(xIndex: column, yIndex: rulerVerticalLayer)) case final child?) {
+        if (buildOrObtainChildFor(
+                ChildVicinity(xIndex: column, yIndex: rulerVerticalLayer))
+            case final child?) {
           child.layout(constraints.loosen());
           parentDataOf(child).layoutOffset =
-              Offset((baseColumn + column) * rulerWidth - thickness / 2, 0) - Offset(horizontalPixels, 0);
+              Offset((baseColumn + column) * rulerWidth - thickness / 2, 0) -
+                  Offset(horizontalPixels, 0);
         }
       }
       final baseRow = (verticalPixels / rulerHeight).floor();
       final maxRow = viewportHeight ~/ rulerHeight + 1;
       for (var row = 0; row <= maxRow; row += 1) {
-        if (buildOrObtainChildFor(ChildVicinity(xIndex: row, yIndex: rulerHorizontalLayer)) case final child?) {
+        if (buildOrObtainChildFor(
+                ChildVicinity(xIndex: row, yIndex: rulerHorizontalLayer))
+            case final child?) {
           child.layout(constraints.loosen());
           parentDataOf(child).layoutOffset =
-              Offset(0, (baseRow + row) * rulerHeight - thickness / 2) - Offset(0, verticalPixels);
+              Offset(0, (baseRow + row) * rulerHeight - thickness / 2) -
+                  Offset(0, verticalPixels);
         }
       }
     }
@@ -263,12 +281,15 @@ class WidgetCanvasRenderTwoDimensionalViewport<T> extends RenderTwoDimensionalVi
         element.addListener(markNeedsLayout);
         element.size.addListener(markNeedsLayout);
 
-        child.layout(BoxConstraints.tight(element.size.value));
+        child.layout(
+            BoxConstraints.tight(element.getScaledSize(data.scaleFactor)));
         parentDataOf(child).layoutOffset = element.coordinate - topLeft;
       }
     }
 
-    verticalOffset.applyContentDimensions(double.negativeInfinity, double.infinity);
-    horizontalOffset.applyContentDimensions(double.negativeInfinity, double.infinity);
+    verticalOffset.applyContentDimensions(
+        double.negativeInfinity, double.infinity);
+    horizontalOffset.applyContentDimensions(
+        double.negativeInfinity, double.infinity);
   }
 }

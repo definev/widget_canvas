@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:widget_canvas/src/domain/widget_canvas_elements.dart';
 import 'package:widget_canvas/widget_canvas.dart';
 
 class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
