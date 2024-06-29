@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:widget_canvas/src/widget_canvas.dart';
+import 'package:widget_canvas/widget_canvas.dart';
 
 typedef Coordinate = Offset;
 
@@ -25,8 +26,17 @@ class CanvasElement<T> extends ValueNotifier<Coordinate>
     );
   }
 
-  Coordinate get coordinate => value;
-  set coordinate(Coordinate coordinate) => value = coordinate;
+  void setOriginalCoordinate(Coordinate coordinate, double scaleFactor) {
+    value = coordinate / scaleFactor;
+  }
+
+  Coordinate getScaledCoordinate(double scaleFactor) {
+    if (scaleFactor < 1.0) return value;
+    return Coordinate(
+      value.dx * scaleFactor,
+      value.dy * scaleFactor,
+    );
+  }
 
   final ValueNotifier<bool> _isPerminantVisible = ValueNotifier(false);
   late ValueNotifier<bool> isPerminantVisibleNotifier = _isPerminantVisible;

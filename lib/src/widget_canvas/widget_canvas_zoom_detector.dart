@@ -49,7 +49,7 @@ class WidgetCanvasZoomDetector extends StatefulWidget {
     BuildContext context,
     double scale,
   ) {
-    final canvasTheme = WidgetCanvasTheme.maybeOf(context) ??
+    final canvasTheme = WidgetCanvasTheme.maybeCanvasThemeOf(context) ??
         WidgetCanvasThemeData.defaultValue;
     return canvasTheme * scale;
   }
@@ -76,6 +76,10 @@ class WidgetCanvasZoomDetector extends StatefulWidget {
 class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
   Offset? _referenceFocalPoint;
   double? _scaleStart;
+
+  late ValueNotifier<WidgetCanvasThemeData> canvasThemeNotifier = ValueNotifier(
+    widget.scaleCanvasThemeDataBuilder(context, widget.scaleFactor),
+  );
 
   Offset _pointToOffset(WidgetCanvasThemeData canvasTheme, Offset delta) {
     final result = Offset(
@@ -128,6 +132,7 @@ class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
     final Offset translate = _pointToOffset(
         newCanvasTheme, _referenceFocalPoint! - focalPointSceneScaled);
     _translateCanvas(translate);
+    canvasThemeNotifier.value = newCanvasTheme;
   }
 
   void onEndScale() {
@@ -137,9 +142,6 @@ class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
 
   @override
   Widget build(BuildContext context) {
-    final canvasTheme =
-        widget.scaleCanvasThemeDataBuilder(context, widget.scaleFactor);
-
     return RawGestureDetector(
       gestures: {
         ScaleGestureRecognizer:
@@ -147,10 +149,10 @@ class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
           () => ScaleGestureRecognizer(),
           (instance) => instance
             ..onStart = (details) {
-              onStartScale(canvasTheme, details);
+              onStartScale(canvasThemeNotifier.value, details);
             }
             ..onUpdate = (details) {
-              onUpdateScale(canvasTheme, details);
+              onUpdateScale(canvasThemeNotifier.value, details);
             }
             ..onEnd = (details) {
               onEndScale();
@@ -158,7 +160,7 @@ class _WidgetCanvasZoomDetectorState extends State<WidgetCanvasZoomDetector> {
         ),
       },
       child: WidgetCanvasTheme(
-        data: canvasTheme,
+        data: canvasThemeNotifier,
         child: widget.child,
       ),
     );

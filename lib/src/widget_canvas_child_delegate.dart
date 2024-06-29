@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:widget_canvas/src/domain/widget_canvas_elements.dart';
 import 'package:widget_canvas/widget_canvas.dart';
 
 class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
@@ -9,9 +8,17 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
     this.showGrid = true,
   });
 
-  static Comparator<CanvasElement<T>> defaultCompare<T>(Axis axis) => switch (axis) {
-        Axis.horizontal => (a, b) => a.coordinate.dx.compareTo(b.coordinate.dx),
-        Axis.vertical => (a, b) => a.coordinate.dy.compareTo(b.coordinate.dy),
+  static Comparator<CanvasElement<T>> defaultCompare<T>(
+          Axis axis, double scaleFactor) =>
+      switch (axis) {
+        Axis.horizontal => (a, b) => a
+            .getScaledCoordinate(scaleFactor)
+            .dx
+            .compareTo(b.getScaledCoordinate(scaleFactor).dx),
+        Axis.vertical => (a, b) => a
+            .getScaledCoordinate(scaleFactor)
+            .dy
+            .compareTo(b.getScaledCoordinate(scaleFactor).dy),
       };
 
   final WidgetCanvasElements<T> elements;
@@ -22,55 +29,55 @@ class WidgetCanvasChildDelegate<T> extends TwoDimensionalChildDelegate {
 
   @override
   Widget? build(BuildContext context, ChildVicinity vicinity) {
-    final theme = Theme.of(context);
-    final data = WidgetCanvasTheme.maybeOf(context) ?? WidgetCanvasThemeData.defaultValue;
-    final WidgetCanvasThemeData(:scaleFactor, :rulerColor, :rulerThickness) = data;
-
     if (vicinity == const ChildVicinity(xIndex: -1, yIndex: 0)) {
       return const SizedBox.square();
     }
-    if (vicinity.yIndex == WidgetCanvasRenderTwoDimensionalViewport.rulerVerticalLayer) {
-      return IgnorePointer(
-        child: VerticalDivider(
-          width: rulerThickness * scaleFactor,
-          thickness: rulerThickness * scaleFactor,
-          color: rulerColor,
-        ),
+
+    if (vicinity.yIndex ==
+        WidgetCanvasRenderTwoDimensionalViewport.rulerVerticalLayer) {
+      return Builder(
+        builder: (context) {
+          final data = WidgetCanvasTheme.of(context);
+          return ListenableBuilder(
+            listenable: data,
+            builder: (context, _) => IgnorePointer(
+              child: VerticalDivider(
+                width: data.value.scaleFactor,
+                thickness: data.value.scaleFactor,
+                color: data.value.rulerColor,
+              ),
+            ),
+          );
+        },
       );
     }
-    if (vicinity.yIndex == WidgetCanvasRenderTwoDimensionalViewport.rulerHorizontalLayer) {
-      return IgnorePointer(
-        child: Divider(
-          height: rulerThickness * scaleFactor,
-          thickness: rulerThickness * scaleFactor,
-          color: rulerColor,
-        ),
+    if (vicinity.yIndex ==
+        WidgetCanvasRenderTwoDimensionalViewport.rulerHorizontalLayer) {
+      return Builder(
+        builder: (context) {
+          final data = WidgetCanvasTheme.of(context);
+          return ListenableBuilder(
+            listenable: data,
+            builder: (context, _) => IgnorePointer(
+              child: Divider(
+                height: data.value.scaleFactor,
+                thickness: data.value.scaleFactor,
+                color: data.value.rulerColor,
+              ),
+            ),
+          );
+        },
       );
     }
 
     if (renderViewport.sortedElements![vicinity] case final element?) {
-      return WidgetCanvasTheme(
-        data: data,
-        child: Theme(
-          data: theme.copyWith(
-            textTheme: theme.textTheme.apply(fontSizeFactor: scaleFactor),
-          ),
-          child: Builder(
-            builder: (context) {
-              final theme = Theme.of(context);
-              return DefaultTextStyle(
-                style: theme.textTheme.titleLarge!.copyWith(color: Colors.black),
-                child: Builder(builder: (context) => builder(context, element)),
-              );
-            },
-          ),
-        ),
-      );
+      return builder(context, element);
     }
 
     return null;
   }
 
   @override
-  bool shouldRebuild(covariant WidgetCanvasChildDelegate<T> oldDelegate) => elements != oldDelegate.elements;
+  bool shouldRebuild(covariant WidgetCanvasChildDelegate<T> oldDelegate) =>
+      elements != oldDelegate.elements;
 }

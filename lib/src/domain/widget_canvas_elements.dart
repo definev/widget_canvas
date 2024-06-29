@@ -9,9 +9,18 @@ class WidgetCanvasElements<T> {
   })  : _list = list,
         _perminantVisibleSet = perminantVisibleSet;
 
-  factory WidgetCanvasElements.fromList(List<CanvasElement<T>> elements) {
+  factory WidgetCanvasElements.fromList(
+    List<CanvasElement<T>> elements, {
+    double scaleFactor = 1.0,
+  }) {
     return WidgetCanvasElements.raw(
-      list: elements.binaryList(WidgetCanvasChildDelegate.defaultCompare(Axis.horizontal)),
+      list: BinaryList(
+        list: elements,
+        compare: WidgetCanvasChildDelegate.defaultCompare(
+          Axis.horizontal,
+          scaleFactor,
+        ),
+      ),
       perminantVisibleSet: {},
     );
   }
@@ -28,7 +37,6 @@ class WidgetCanvasElements<T> {
     return (sortedByIdList.rawList.lastOrNull?.id ?? -1) + 1;
   }
 
-
   WidgetCanvasElements<T> copyWith({
     BinaryList<CanvasElement<T>>? binaryList,
     Set<CanvasElement<T>>? perminantVisibleSet,
@@ -39,7 +47,8 @@ class WidgetCanvasElements<T> {
     );
   }
 
-  WidgetCanvasElements<T> insert({required CanvasElement<T> Function(int id) builder}) {
+  WidgetCanvasElements<T> insert(
+      {required CanvasElement<T> Function(int id) builder}) {
     return WidgetCanvasElements<T>.raw(
       list: BinaryList<CanvasElement<T>>(
         list: [..._list.rawList, builder(_nextId)],
@@ -87,7 +96,8 @@ class WidgetCanvasElements<T> {
   final Set<CanvasElement<T>> _perminantVisibleSet;
   Set<CanvasElement<T>> get perminantVisibleSet => _perminantVisibleSet;
 
-  WidgetCanvasElements<T> markElementIsPerminantVisible(CanvasElement<T> value) {
+  WidgetCanvasElements<T> markElementIsPerminantVisible(
+      CanvasElement<T> value) {
     final index = binarySearch(_list.rawList, value);
     if (index == -1) return this;
     value.isPerminantVisible = true;
@@ -100,7 +110,8 @@ class WidgetCanvasElements<T> {
     );
   }
 
-  WidgetCanvasElements<T> unmarkElementIsPerminantVisible(CanvasElement<T> value) {
+  WidgetCanvasElements<T> unmarkElementIsPerminantVisible(
+      CanvasElement<T> value) {
     final index = binarySearch(_list.rawList, value);
     if (index == -1) return this;
     value.isPerminantVisible = false;

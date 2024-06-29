@@ -1,7 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:widget_canvas/src/domain/widget_canvas_elements.dart';
 import 'package:widget_canvas/widget_canvas.dart';
 
 export 'widget_canvas/widget_canvas_theme.dart';
@@ -143,19 +142,21 @@ class WidgetCanvasRenderTwoDimensionalViewport<T>
   final BuildContext context;
 
   List<CanvasElement<T>>? _visibleElements;
-
   Map<ChildVicinity, CanvasElement<T>?>? sortedElements = {};
+  ValueNotifier<WidgetCanvasThemeData>? canvasThemeNotifier;
 
   List<CanvasElement<T>> getVisibleElement(
     WidgetCanvasElements<T> elements, {
     required Offset topLeftView,
     required Offset bottomRightView,
+    required double scaleFactor,
   }) {
     sortedElements = null;
     sortedElements = {};
 
-    (Offset topLeft, Offset bottomRight) getCorner(CanvasElement<T> element) {
-      final topLeft = element.coordinate;
+    (Offset topLeft, Offset bottomRight) getCorner(
+        CanvasElement<T> element, double scaleFactor) {
+      final topLeft = element.getScaledCoordinate(scaleFactor);
       final size = element.size.value;
       final bottomRight = topLeft + size.bottomRight(Offset.zero);
       return (topLeft, bottomRight);
@@ -163,9 +164,10 @@ class WidgetCanvasRenderTwoDimensionalViewport<T>
 
     BinaryList<CanvasElement<T>>? sorted = elements.list;
     sorted = sorted //
-        .sort(WidgetCanvasChildDelegate.defaultCompare(Axis.horizontal))
+        .sort(WidgetCanvasChildDelegate.defaultCompare(
+            Axis.horizontal, scaleFactor))
         .whereIndexed((element) {
-      final (topLeft, bottomRight) = getCorner(element);
+      final (topLeft, bottomRight) = getCorner(element, scaleFactor);
       return switch (true) {
         _ when topLeft.dx < topLeftView.dx && bottomRight.dx < topLeftView.dx =>
           -1,
@@ -178,9 +180,10 @@ class WidgetCanvasRenderTwoDimensionalViewport<T>
     });
 
     sorted = sorted //
-        ?.sort(WidgetCanvasChildDelegate.defaultCompare(Axis.vertical))
+        ?.sort(WidgetCanvasChildDelegate.defaultCompare(
+            Axis.vertical, scaleFactor))
         .whereIndexed((element) {
-      final (topLeft, bottomRight) = getCorner(element);
+      final (topLeft, bottomRight) = getCorner(element, scaleFactor);
       return switch (true) {
         _ when topLeft.dy < topLeftView.dy && bottomRight.dy < topLeftView.dy =>
           -1,
@@ -214,13 +217,24 @@ class WidgetCanvasRenderTwoDimensionalViewport<T>
   void dispose() {
     _visibleElements = null;
     sortedElements = null;
+    canvasThemeNotifier?.removeListener(canvasThemeMarkNeedsLayout);
+    canvasThemeNotifier = null;
     super.dispose();
+  }
+
+  void canvasThemeMarkNeedsLayout() {
+    print('canvasThemeMarkNeedsLayout');
+    markNeedsLayout();
   }
 
   @override
   void layoutChildSequence() {
-    final data = WidgetCanvasTheme.maybeOf(context) ??
-        WidgetCanvasThemeData.defaultValue;
+    final newCanvasThemeNotifier = WidgetCanvasTheme.of(context);
+    if (canvasThemeNotifier != newCanvasThemeNotifier) {
+      canvasThemeNotifier?.removeListener(canvasThemeMarkNeedsLayout);
+      canvasThemeNotifier = newCanvasThemeNotifier;
+      canvasThemeNotifier?.addListener(canvasThemeMarkNeedsLayout);
+    }
 
     if (_visibleElements case final elements?) {
       for (final element in elements) {
@@ -240,9 +254,9 @@ class WidgetCanvasRenderTwoDimensionalViewport<T>
 
     final canvasDelegate = delegate as WidgetCanvasChildDelegate<T>;
     if (canvasDelegate.showGrid) {
-      final rulerHeight = data.rulerHeight;
-      final rulerWidth = data.rulerWidth;
-      final thickness = data.rulerThickness * data.scaleFactor;
+      final rulerHeight = newCanvasThemeNotifier.value.scaledRulerHeight;
+      final rulerWidth = newCanvasThemeNotifier.value.scaledRulerWidth;
+      final thickness = newCanvasThemeNotifier.value.scaledRulerThickness;
 
       final baseColumn = (horizontalPixels / rulerWidth).floor();
       final maxColumn = viewportWidth ~/ rulerWidth + 1;
@@ -274,6 +288,7 @@ class WidgetCanvasRenderTwoDimensionalViewport<T>
       canvasDelegate.elements,
       topLeftView: topLeft - Offset(cacheExtent, cacheExtent),
       bottomRightView: bottomRight + Offset(cacheExtent, cacheExtent),
+      scaleFactor: newCanvasThemeNotifier.value.scaleFactor,
     );
 
     for (final element in _visibleElements!) {
@@ -281,9 +296,11 @@ class WidgetCanvasRenderTwoDimensionalViewport<T>
         element.addListener(markNeedsLayout);
         element.size.addListener(markNeedsLayout);
 
-        child.layout(
-            BoxConstraints.tight(element.getScaledSize(data.scaleFactor)));
-        parentDataOf(child).layoutOffset = element.coordinate - topLeft;
+        child.layout(BoxConstraints.tight(
+            element.getScaledSize(newCanvasThemeNotifier.value.scaleFactor)));
+        parentDataOf(child).layoutOffset = element
+                .getScaledCoordinate(newCanvasThemeNotifier.value.scaleFactor) -
+            topLeft;
       }
     }
 

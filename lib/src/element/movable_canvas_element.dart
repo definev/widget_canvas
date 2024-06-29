@@ -1,40 +1,35 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:widget_canvas/src/domain/widget_canvas_elements.dart';
 import 'package:widget_canvas/widget_canvas.dart';
 
 class MovableCanvasElement<T> extends StatefulWidget {
-  const MovableCanvasElement(
-    this.data, {
+  const MovableCanvasElement({
     super.key,
-    required this.elements,
-    required this.onElementsChanged,
+    required this.data,
     required this.child,
     this.onCanvasElementMove,
     this.snap = false,
   });
 
   final CanvasElement<T> data;
-  final WidgetCanvasElements<T> elements;
-  final ValueChanged<WidgetCanvasElements<T>> onElementsChanged;
   final ValueChanged<Offset>? onCanvasElementMove;
   final bool snap;
   final Widget child;
 
   @override
-  State<MovableCanvasElement<T>> createState() => _MovableCanvasElementState<T>();
+  State<MovableCanvasElement<T>> createState() =>
+      _MovableCanvasElementState<T>();
 }
 
 class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
-  ValueChanged<Offset> get onCanvasElementMove => (coordinate) {
+  ValueChanged<Offset> onCanvasElementMove(double scaleFactor) => (coordinate) {
         widget.onCanvasElementMove?.call(coordinate);
-        widget.onElementsChanged(widget.elements.markElementIsPerminantVisible(widget.data..coordinate = coordinate));
+        widget.data.setOriginalCoordinate(coordinate, scaleFactor);
       };
 
   VoidCallback get onCanvasElementMoveEnd => () {
         lastOffset = null;
         startPosition = null;
-        widget.onElementsChanged(widget.elements.unmarkElementIsPerminantVisible(widget.data));
       };
 
   Offset? lastOffset;
@@ -42,8 +37,6 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
 
   @override
   Widget build(BuildContext context) {
-    final WidgetCanvasThemeData(:rulerHeight, :rulerWidth) = WidgetCanvasTheme.of(context);
-
     return GestureDetector(
       dragStartBehavior: DragStartBehavior.down,
       trackpadScrollCausesScale: true,
@@ -55,10 +48,13 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
         PointerDeviceKind.unknown,
       },
       onVerticalDragStart: (details) {
-        lastOffset = widget.data.coordinate;
+        final canvasTheme = WidgetCanvasTheme.canvasThemeOf(context);
+        lastOffset = widget.data.getScaledCoordinate(canvasTheme.scaleFactor);
         startPosition = details.localPosition;
       },
       onVerticalDragUpdate: (details) {
+        final canvasTheme = WidgetCanvasTheme.canvasThemeOf(context);
+
         if (lastOffset == null) return;
         if (startPosition == null) return;
 
@@ -67,12 +63,14 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
         var newOffset = lastOffset! + delta;
         if (widget.snap) {
           newOffset = Offset(
-            (newOffset.dx / rulerWidth).round() * rulerWidth,
-            (newOffset.dy / rulerHeight).round() * rulerHeight,
+            (newOffset.dx / canvasTheme.rulerWidth).round() *
+                canvasTheme.rulerWidth,
+            (newOffset.dy / canvasTheme.rulerHeight).round() *
+                canvasTheme.rulerHeight,
           );
         }
 
-        onCanvasElementMove(newOffset);
+        onCanvasElementMove(canvasTheme.scaleFactor)(newOffset);
       },
       onVerticalDragCancel: () => onCanvasElementMoveEnd(),
       onVerticalDragEnd: (_) => onCanvasElementMoveEnd(),
@@ -80,11 +78,15 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
       //
 
       onHorizontalDragStart: (details) {
-        lastOffset = widget.data.coordinate;
+        final canvasTheme = WidgetCanvasTheme.canvasThemeOf(context);
+
+        lastOffset = widget.data.getScaledCoordinate(canvasTheme.scaleFactor);
         startPosition = details.localPosition;
         widget.data.isPerminantVisible = true;
       },
       onHorizontalDragUpdate: (details) {
+        final canvasTheme = WidgetCanvasTheme.canvasThemeOf(context);
+
         if (lastOffset == null) return;
         if (startPosition == null) return;
 
@@ -93,12 +95,14 @@ class _MovableCanvasElementState<T> extends State<MovableCanvasElement<T>> {
         var newOffset = lastOffset! + delta;
         if (widget.snap) {
           newOffset = Offset(
-            (newOffset.dx / rulerWidth).round() * rulerWidth,
-            (newOffset.dy / rulerHeight).round() * rulerHeight,
+            (newOffset.dx / canvasTheme.rulerWidth).round() *
+                canvasTheme.rulerWidth,
+            (newOffset.dy / canvasTheme.rulerHeight).round() *
+                canvasTheme.rulerHeight,
           );
         }
 
-        onCanvasElementMove(newOffset);
+        onCanvasElementMove(canvasTheme.scaleFactor)(newOffset);
       },
       onHorizontalDragCancel: () => onCanvasElementMoveEnd(),
       onHorizontalDragEnd: (_) => onCanvasElementMoveEnd(),
